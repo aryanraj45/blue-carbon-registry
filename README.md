@@ -1,7 +1,7 @@
 # Blue Carbon Registry Platform
 > The Trust Layer for Blue Carbon: A Verifiable, AI-Powered MRV System on the Blockchain.
 
-![Logo](src/assets/logob.png) ## Smart India Hackathon - Problem Statement
+## Smart India Hackathon - Problem Statement
 | Field                 | Details                                                    |
 |-----------------------|------------------------------------------------------------|
 | **Problem Statement ID** | 25038                                                      |
@@ -14,13 +14,13 @@ This README provides an overview of our project for the SIH Hackathon, including
 ---
 
 ## Team PLUTO
-| Role          | Name            | Roll Number     | GitHub Username                                |
-|---------------|-----------------|-----------------|------------------------------------------------|
-| **Team Leader** | **Raj Arayan** | **2024UIC4038** | [@aryanraj45](https://github.com/aryanraj45)       |
+| Role          | Name            | Roll Number     | GitHub Username                                        |
+|---------------|-----------------|-----------------|--------------------------------------------------------|
+| **Team Leader** | **Raj Aryan** | **2024UIC4038** | [@aryanraj45](https://github.com/aryanraj45)               |
 | **Team Member** | Devansh         | 2024UIC3507     | |
-| **Team Member** | Daksh Pathak    | 2024UIC3539     | |
-| **Team Member** | Prakhar Sharma  | 2024UIC3543     | |
-| **Team Member** | Aastha Suhani   | 2024UCB6631     | |
+| **Team Member** | Daksh Pathak    | 2024UIC3539     | [@dakshhhhh15](https://github.com/dakshhhhh15)         |
+| **Team Member** | Prakhar Sharma  | 2024UIC3543     | [@prakhar0608shrma](https://github.com/prakhar0608shrma) |
+| **Team Member** | Aastha Suhani   | 2024UCB6631     | [@Aastha0311](https://github.com/Aastha0311)           |
 | **Team Member** | Nehal Pathak    | 2024UCD2175     | |
 
 ---
@@ -29,7 +29,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 | Resource            | Link                                                                                        |
 |---------------------|---------------------------------------------------------------------------------------------|
 | **SIH Presentation** | [Final SIH Presentation]()                                               |
-| **Video Demonstration**| [Watch Video]()                                               |
+| **Video Demonstration**| [Watch Video](https://youtu.be/y8imXf7IkRM)                                                 |
 | **Live Deployment** | [View Deployment](https://earth-credits-hub-32-cn42.vercel.app/homepage)                    |
 | **Source Code** | [GitHub Repository](https://github.com/aryanraj45/blue-carbon-registry)                     |
 
