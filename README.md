@@ -33,7 +33,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 | Resource            | Link                                                                                        |
 |---------------------|---------------------------------------------------------------------------------------------|
 | **SIH Presentation** | [Final SIH Presentation](https://drive.google.com/file/d/1JhhaBO-EGZcgSuiQFD4sbIM7P25mCErR/view?usp=sharing) |
-| **Video Demonstration**| [Watch Video](https://drive.google.com/file/d/1JhhaBO-EGZcgSuiQFD4sbIM7P25mCErR/view?usp=sharing) |
+| **Video Demonstration**| [Watch Video] (https://youtu.be/3jfVDhsYw-E) |
 | **Live Deployment** | [View Deployment](https://earth-credits-hub-32-cn42.vercel.app/homepage)                    |
 | **Source Code** | [GitHub Repository](https://github.com/aryanraj45/blue-carbon-registry)                     |
 
