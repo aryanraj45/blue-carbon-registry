@@ -24,7 +24,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 | Devansh         | 2024UIC3507     | [@devvaansh](https://github.com/devvaansh)             |
 | Daksh Pathak    | 2024UIC3539     | [@dakshhhhh15](https://github.com/dakshhhhh15)         |
 | Prakhar Sharma  | 2024UIC3543     | [@prakhar0608shrma](https://github.com/prakhar0608shrma) |
-| Aastha Suhani   | 2024UCB6631     | [@Aastha0311](https://github.com/Aastha0311)           |
+| Aastha Suhani   | 2024UCB6631     | [@Aastha3011](https://github.com/Aastha3011)           |
 | Nehal Pathak    | 2024UCD2175     | [@nehal1930](https://github.com/nehal1930)             |
 
 ---
