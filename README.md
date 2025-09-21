@@ -14,14 +14,18 @@ This README provides an overview of our project for the SIH Hackathon, including
 ---
 
 ## Team PLUTO
-| Role          | Name            | Roll Number     | GitHub Username                                        |
-|---------------|-----------------|-----------------|--------------------------------------------------------|
-| **Team Leader** | **Raj Aryan** | **2024UIC4038** | [@aryanraj45](https://github.com/aryanraj45)               |
-| **Team Member** | Devansh         | 2024UIC3507     | |
-| **Team Member** | Daksh Pathak    | 2024UIC3539     | [@dakshhhhh15](https://github.com/dakshhhhh15)         |
-| **Team Member** | Prakhar Sharma  | 2024UIC3543     | [@prakhar0608shrma](https://github.com/prakhar0608shrma) |
-| **Team Member** | Aastha Suhani   | 2024UCB6631     | [@Aastha0311](https://github.com/Aastha0311)           |
-| **Team Member** | Nehal Pathak    | 2024UCD2175     | |
+
+**Team Leader:** Raj Aryan - [@aryanraj45](https://github.com/aryanraj45)
+
+### Team Members
+| Name            | Roll Number     | GitHub Username                                        |
+|-----------------|-----------------|--------------------------------------------------------|
+| Raj Aryan       | 2024UIC4038     | [@aryanraj45](https://github.com/aryanraj45)               |
+| Devansh         | 2024UIC3507     | [@devvaansh](https://github.com/devvaansh)             |
+| Daksh Pathak    | 2024UIC3539     | [@dakshhhhh15](https://github.com/dakshhhhh15)         |
+| Prakhar Sharma  | 2024UIC3543     | [@prakhar0608shrma](https://github.com/prakhar0608shrma) |
+| Aastha Suhani   | 2024UCB6631     | [@Aastha0311](https://github.com/Aastha0311)           |
+| Nehal Pathak    | 2024UCD2175     | |
 
 ---
 
