@@ -1,0 +1,6 @@
+# Ignore contributions to dependency lock files
+package-lock.json linguist-vendored
+yarn.lock linguist-vendored
+
+# You can also ignore entire directories
+dist/ linguist-vendored

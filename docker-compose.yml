@@ -1,0 +1,18 @@
+# docker-compose.yml for easy local development
+
+version: '3.8'
+
+services:
+  # The name of our service
+  webapp:
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    # Give the container a friendly name
+    container_name: my_cool_app
+    # Map port 3000 on the host to port 3000 in the container
+    ports:
+      - "3000:3000"
+    # Set environment variables for development
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
