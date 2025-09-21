@@ -32,8 +32,8 @@ This README provides an overview of our project for the SIH Hackathon, including
 ## 🔗 Project Links
 | Resource            | Link                                                                                        |
 |---------------------|---------------------------------------------------------------------------------------------|
-| **SIH Presentation** | [Final SIH Presentation]()                                               |
-| **Video Demonstration**| [Watch Video](https://youtu.be/y8imXf7IkRM)                                                 |
+| **SIH Presentation** | [Final SIH Presentation](https://drive.google.com/file/d/1JhhaBO-EGZcgSuiQFD4sbIM7P25mCErR/view?usp=sharing) |
+| **Video Demonstration**| [Watch Video](https://drive.google.com/file/d/1JhhaBO-EGZcgSuiQFD4sbIM7P25mCErR/view?usp=sharing) |
 | **Live Deployment** | [View Deployment](https://earth-credits-hub-32-cn42.vercel.app/homepage)                    |
 | **Source Code** | [GitHub Repository](https://github.com/aryanraj45/blue-carbon-registry)                     |
 
@@ -69,6 +69,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 * **Runtime:** Node.js
 * **Framework:** Express.js
 * **AI Model:** Google Gemini API
+* **Automation:** Playwright
 
 ### Database
 * **Type:** NoSQL (MongoDB)
@@ -91,7 +92,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 ### Prerequisites
 * Node.js (v18 or higher)
 * npm or yarn
-* A `.env` file in the root directory (see `.env.example`)
+* A `.env` file in the root directory and in the `backend` directory.
 
 ### Setup
 
@@ -117,12 +118,15 @@ This README provides an overview of our project for the SIH Hackathon, including
     cd .. 
     ```
 
-5.  **Create an environment file:**
-    * Create a file named `.env` in the root of the project.
-    * Add your API keys. It should look like this:
+5.  **Create Environment Files:**
+    * In the project's **root directory**, create a file named `.env` for the frontend:
         ```env
         VITE_GEMINI_API_KEY=YOUR_GEMINI_API_KEY
-        # Add other keys like database connection strings if needed
+        ```
+    * Inside the **`backend` directory**, create another file named `.env` for the server:
+        ```env
+        MONGO_URI=YOUR_MONGODB_CONNECTION_STRING
+        JWT_SECRET=YOUR_SUPER_SECRET_JWT_KEY
         ```
 
 6.  **Run the backend server:**
