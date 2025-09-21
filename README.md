@@ -25,7 +25,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 | Daksh Pathak    | 2024UIC3539     | [@dakshhhhh15](https://github.com/dakshhhhh15)         |
 | Prakhar Sharma  | 2024UIC3543     | [@prakhar0608shrma](https://github.com/prakhar0608shrma) |
 | Aastha Suhani   | 2024UCB6631     | [@Aastha0311](https://github.com/Aastha0311)           |
-| Nehal Pathak    | 2024UCD2175     | |
+| Nehal Pathak    | 2024UCD2175     | [@nehal1930](https://github.com/nehal1930)             |
 
 ---
 
@@ -33,7 +33,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 | Resource            | Link                                                                                        |
 |---------------------|---------------------------------------------------------------------------------------------|
 | **SIH Presentation** | [Final SIH Presentation](https://drive.google.com/file/d/1JhhaBO-EGZcgSuiQFD4sbIM7P25mCErR/view?usp=sharing) |
-| **Video Demonstration**| [Watch Video] (https://youtu.be/3jfVDhsYw-E) |
+| **Video Demonstration**| [Watch Video](https://youtu.be/y8imXf7IkRM)                                                 |
 | **Live Deployment** | [View Deployment](https://earth-credits-hub-32-cn42.vercel.app/homepage)                    |
 | **Source Code** | [GitHub Repository](https://github.com/aryanraj45/blue-carbon-registry)                     |
 
