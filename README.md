@@ -15,7 +15,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 
 ## Team PLUTO
 
-**Team Leader:** Raj Aryan - [@aryanraj45](https://github.com/aryanraj45)
+**Team Leader:** **Raj Aryan** - [@aryanraj45](https://github.com/aryanraj45)
 
 ### Team Members
 | Name            | Roll Number     | GitHub Username                                        |
