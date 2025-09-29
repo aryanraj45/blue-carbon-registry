@@ -5,11 +5,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { useToast } from "@/hooks/use-toast";
 import DashboardHeader from "./DashboardHeader";
 import { Chatbot } from "@/components/Chatbot";
+import DocumentProcessor from "./DocumentProcessor";
 import { BackgroundBeams } from "@/components/ui/background-beams";
 import { useSolanaAction } from "@/hooks/useSolanaAction";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { Button } from "@/components/ui/button";
-import { Send, Coins, Wallet } from "lucide-react";
+import { Send, Coins, Wallet, FileText, MessageSquare } from "lucide-react";
+import { OCRResult } from "../lib/ocr-service";
 
 import data1 from "@/assets/data1.png";
 import data2 from "@/assets/data2.png";
@@ -26,7 +28,7 @@ let model;
 if (API_KEY) {
   genAI = new GoogleGenerativeAI(API_KEY);
   model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-2.5-pro",
     systemInstruction: `You are VerifiAI, an expert assistant for the Indian National Registry for Blue Carbon. Your goal is to guide a new user through the project submission process. You must be friendly, professional, and strictly follow the guidelines of the Indian Ministry of Environment, Forest and Climate Change (MoEFCC). Guide the user one phase at a time, waiting for their response before proceeding. When a user uploads a file, acknowledge it by name and confirm you have attached it to their project file. Then, prompt them for the next action.`,
   });
 } else {
@@ -49,6 +51,8 @@ const NGODashboard = () => {
     const [messages, setMessages] = React.useState<Message[]>([]);
     const [isAiTyping, setIsAiTyping] = React.useState(false);
     const [balance, setBalance] = React.useState<number>(0);
+    const [activeTab, setActiveTab] = React.useState<'chat' | 'ocr'>('chat');
+    const [ocrResults, setOcrResults] = React.useState<OCRResult | null>(null);
     const { toast } = useToast();
     const { sendTransaction, requestAirdrop, getBalance, isSending } = useSolanaAction();
     const [isTtsEnabled, setIsTtsEnabled] = React.useState(false);
@@ -96,7 +100,104 @@ const NGODashboard = () => {
     ]);
   }, []);
 
-    const handleSendMessage = async (userInput: string) => {
+  const handleOCRProcessingComplete = (result: OCRResult) => {
+    setOcrResults(result);
+    
+    // Add AI message about successful OCR processing
+    const ocrMessage: Message = {
+      id: Date.now(),
+      text: `🎉 Excellent! I've successfully processed your PDF containing ${result.documents.length} documents using AI OCR. Here's what I found:\n\n${result.documents.map((doc, index) => 
+        `**${doc.name}:** ${Math.round(doc.confidence * 100)}% confidence`
+      ).join('\n')}\n\n**Overall Confidence:** ${Math.round(result.overallConfidence * 100)}%\n**Document Hash:** ${result.mockHash.substring(0, 20)}...\n\nAll your documents are now ready for blockchain submission. The "Store on Chain" button is available in the OCR tab to permanently record this data on the Solana blockchain.`,
+      sender: "ai",
+    };
+    
+    setMessages(prev => [...prev, ocrMessage]);
+    
+    toast({
+      title: "OCR Processing Complete!",
+      description: `Successfully processed ${result.documents.length} documents with ${Math.round(result.overallConfidence * 100)}% confidence.`,
+    });
+  };
+
+  const handleStoreOnChain = async (result: OCRResult) => {
+    try {
+      const transactionData = JSON.stringify({
+        type: "BLUE_CARBON_DOCUMENTS",
+        timestamp: new Date().toISOString(),
+        user: localStorage.getItem("userEmail") || "anonymous",
+        documentHash: result.mockHash,
+        documents: result.documents.map(doc => ({
+          name: doc.name,
+          confidence: doc.confidence,
+          fieldCount: Object.keys(doc.fields).length
+        })),
+        overallConfidence: result.overallConfidence,
+        app: "blue-carbon-registry"
+      });
+
+      console.log("Storing documents on blockchain...");
+      setIsAiTyping(true);
+
+      const { signature, error } = await sendTransaction(transactionData);
+
+      if (signature) {
+        console.log("Documents stored successfully with signature:", signature);
+        toast({
+          title: "Documents Stored on Blockchain!",
+          description: `Your documents are now permanently recorded. Signature: ${signature.substring(0, 12)}...`,
+        });
+
+        const successMessage: Message = {
+          id: Date.now(),
+          text: `🎉 **Success!** Your Blue Carbon documents have been permanently stored on the Solana blockchain!\n\n**Transaction Details:**\n- Signature: ${signature.substring(0, 16)}...\n- Document Hash: ${result.mockHash.substring(0, 20)}...\n- Documents Stored: ${result.documents.length}\n- Overall Confidence: ${Math.round(result.overallConfidence * 100)}%\n\nYour project data is now immutable and can be verified by anyone. This completes the document submission process for your Blue Carbon project!`,
+          sender: "ai",
+        };
+        
+        setMessages(prev => [...prev, successMessage]);
+      }
+
+      if (error) {
+        console.error("Blockchain storage error:", error);
+        toast({
+          title: "Storage Failed",
+          description: error.message || "Failed to store documents on blockchain",
+          variant: "destructive",
+        });
+
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now(),
+            text: `❌ Failed to store documents on blockchain: ${error.message || "Unknown error occurred"}. Please ensure your wallet is connected and has sufficient funds.`,
+            sender: "ai",
+          },
+        ]);
+      }
+    } catch (e) {
+      console.error("Error in blockchain storage:", e);
+      const errorMessage = e instanceof Error ? e.message : "Unknown error occurred";
+
+      toast({
+        title: "Storage Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now(),
+          text: `❌ Error during blockchain storage: ${errorMessage}. Please try again later.`,
+          sender: "ai",
+        },
+      ]);
+    } finally {
+      setIsAiTyping(false);
+    }
+  };
+
+  const handleSendMessage = async (userInput: string) => {
     if (!API_KEY) {
       toast({
         title: "API Key Not Configured",
@@ -390,12 +491,14 @@ Please upload the next document, or let me know if you have any questions.`,
       <div className="relative z-10 w-full">
         <DashboardHeader
           title="NGO Project Portal"
-          subtitle="Submit your project details using our AI assistant below."
+          subtitle="Submit your project details using our AI assistant or process documents with OCR."
         >
           <div className="flex items-center gap-2">
-            <div className="text-sm text-gray-400 flex items-center gap-1">
-              <Wallet className="h-3 w-3" />
-              {balance.toFixed(4)} SOL
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+              <Wallet className="h-4 w-4 text-white drop-shadow-sm" />
+              <span className="text-sm font-medium text-white drop-shadow-sm">
+                {balance.toFixed(4)} SOL
+              </span>
             </div>
             <Button
               variant="outline"
@@ -404,7 +507,7 @@ Please upload the next document, or let me know if you have any questions.`,
               disabled={isSending}
             >
               <Coins className="h-4 w-4 mr-2" />
-              {isSending ? "Requesting..." : "Get Free SOL"}
+              {isSending ? "Requesting..." : "Add Balance"}
             </Button>
             <Button
               variant="outline"
@@ -413,20 +516,80 @@ Please upload the next document, or let me know if you have any questions.`,
               disabled={isSending}
             >
               <Send className="h-4 w-4 mr-2" />
-              {isSending ? "Sending..." : "Test Tx"}
+              {isSending ? "Sending..." : "Initialize"}
             </Button>
             <WalletMultiButton />
           </div>
         </DashboardHeader>
-        <main className="max-w-5xl mx-auto space-y-8 p-4 sm:p-6 lg:p-8">
+        
+        <main className="max-w-6xl mx-auto space-y-10 p-6 sm:p-8 lg:p-12 relative">
+          {/* Enhanced Tab Navigation */}
+          <div className="flex gap-6 p-6 border-t border-gradient-to-r from-blue-800/30 via-blue-600/40 to-blue-800/30 bg-gradient-to-r from-blue-950/20 via-blue-900/30 to-blue-950/20 backdrop-blur-xl rounded-xl shadow-2xl shadow-blue-900/20 border border-blue-800/30 relative overflow-hidden">
+            {/* Subtle background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-cyan-900/10 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent" />
+            
+            <Button
+              variant={activeTab === 'chat' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('chat')}
+              className={`
+                flex items-center gap-3 px-6 py-3 rounded-lg font-medium text-sm
+                transition-all duration-300 ease-out transform relative z-10
+                ${activeTab === 'chat' 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-600/25 scale-105 border-blue-500/50' 
+                  : 'bg-white/5 text-blue-100 border-blue-700/50 hover:bg-white/10 hover:border-blue-600/70 hover:text-white hover:scale-105 hover:shadow-lg hover:shadow-blue-600/20'
+                }
+                backdrop-blur-sm group
+              `}
+            >
+              <MessageSquare className={`h-5 w-5 transition-transform duration-300 ${activeTab === 'chat' ? 'rotate-0' : 'group-hover:rotate-12'}`} />
+              <span className="font-semibold tracking-wide">AI Assistant Chat</span>
+              {activeTab === 'chat' && (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-lg blur-sm -z-10" />
+              )}
+            </Button>
+            
+            <Button
+              variant={activeTab === 'ocr' ? 'default' : 'outline'}
+              onClick={() => setActiveTab('ocr')}
+              className={`
+                flex items-center gap-3 px-6 py-3 rounded-lg font-medium text-sm
+                transition-all duration-300 ease-out transform relative z-10
+                ${activeTab === 'ocr'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg shadow-emerald-600/25 scale-105 border-emerald-500/50'
+                  : 'bg-white/5 text-blue-100 border-blue-700/50 hover:bg-white/10 hover:border-emerald-600/70 hover:text-white hover:scale-105 hover:shadow-lg hover:shadow-emerald-600/20'
+                }
+                backdrop-blur-sm group
+              `}
+            >
+              <FileText className={`h-5 w-5 transition-transform duration-300 ${activeTab === 'ocr' ? 'rotate-0' : 'group-hover:rotate-12'}`} />
+              <span className="font-semibold tracking-wide">Document OCR Processor</span>
+              {activeTab === 'ocr' && (
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-teal-400/20 rounded-lg blur-sm -z-10" />
+              )}
+            </Button>
+
+            {/* Decorative elements */}
+            <div className="absolute -top-2 -right-2 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-cyan-400/10 rounded-full blur-xl" />
+            <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-gradient-to-br from-emerald-400/10 to-teal-400/10 rounded-full blur-xl" />
+          </div>
+
+          {/* Content based on active tab */}
+          {activeTab === 'chat' ? (
             <Chatbot
-                messages={messages}
-                isAiTyping={isAiTyping}
-                onSendMessage={handleSendMessage}
-                onFileUpload={handleFileUpload}
-                isTtsEnabled={isTtsEnabled}
-                setIsTtsEnabled={setIsTtsEnabled}
+              messages={messages}
+              isAiTyping={isAiTyping}
+              onSendMessage={handleSendMessage}
+              onFileUpload={handleFileUpload}
+              isTtsEnabled={isTtsEnabled}
+              setIsTtsEnabled={setIsTtsEnabled}
             />
+          ) : (
+            <DocumentProcessor 
+              onProcessingComplete={handleOCRProcessingComplete}
+              onStoreOnChain={handleStoreOnChain}
+            />
+          )}
         </main>
       </div>
       <BackgroundBeams />
