@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle, Brain, FileText, AlertTriangle, XCircle } from 'lucide-react';
+import { Shimmer, ShimmerSkeleton } from '@/components/ui/shimmer';
+import { CheckCircle, Brain, FileText, AlertTriangle, XCircle, Lightbulb } from 'lucide-react';
 
 interface ChecklistItem {
   id: string;
@@ -14,17 +15,19 @@ interface ChecklistItem {
 
 interface AIAnalysisTabProps {
   projectId: string;
-  confidenceScore: number;
   aiNarrativeSummary: string;
   checklistItems: ChecklistItem[];
   onUpdateChecklist: (items: ChecklistItem[]) => void;
+  isLoadingInsights?: boolean;
+  insights?: string[];
 }
 
 const AIAnalysisTab: React.FC<AIAnalysisTabProps> = ({
-  confidenceScore,
   aiNarrativeSummary,
   checklistItems,
   onUpdateChecklist,
+  isLoadingInsights = false,
+  insights = [],
 }) => {
   const [editableItems, setEditableItems] = useState(checklistItems);
   const [notes, setNotes] = useState('');
@@ -45,12 +48,6 @@ const AIAnalysisTab: React.FC<AIAnalysisTabProps> = ({
       case 'warning': return <Badge variant="secondary">Needs Review</Badge>;
       default: return <Badge variant="outline">Pending</Badge>;
     }
-  }, []);
-
-  const getConfidenceColor = useCallback((score: number) => {
-    if (score >= 85) return 'text-success';
-    if (score >= 70) return 'text-secondary';
-    return 'text-destructive';
   }, []);
 
   const toggleChecklistItem = useCallback(
@@ -81,19 +78,6 @@ const AIAnalysisTab: React.FC<AIAnalysisTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* AI Confidence Score */}
-      <Card className="border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Brain className="h-5 w-5 text-primary" />
-            <span>AI Analysis Complete</span>
-            <Badge className={`ml-2 ${getConfidenceColor(confidenceScore)}`}>
-              Confidence: {confidenceScore}%
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
       {/* AI Narrative Summary */}
       <Card>
         <CardHeader>
@@ -106,6 +90,44 @@ const AIAnalysisTab: React.FC<AIAnalysisTabProps> = ({
           <div className="prose max-w-none">
             <p className="text-foreground leading-relaxed">{aiNarrativeSummary}</p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Insights with Shimmer Effect */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Lightbulb className="h-5 w-5 text-primary" />
+            <span>AI Insights</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingInsights ? (
+            <div className="space-y-3">
+              <Shimmer>
+                <ShimmerSkeleton className="h-4 w-full" />
+              </Shimmer>
+              <Shimmer>
+                <ShimmerSkeleton className="h-4 w-3/4" />
+              </Shimmer>
+              <Shimmer>
+                <ShimmerSkeleton className="h-4 w-5/6" />
+              </Shimmer>
+            </div>
+          ) : insights.length > 0 ? (
+            <div className="space-y-3">
+              {insights.map((insight, index) => (
+                <Shimmer key={index} className="p-3 bg-primary/5 border border-primary/10 rounded-lg">
+                  <div className="flex items-start space-x-2">
+                    <Brain className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-foreground">{insight}</p>
+                  </div>
+                </Shimmer>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-sm">No insights available yet.</p>
+          )}
         </CardContent>
       </Card>
 

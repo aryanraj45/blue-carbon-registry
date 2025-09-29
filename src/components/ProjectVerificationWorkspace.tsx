@@ -1,89 +1,35 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
-  ArrowLeft, CheckCircle, XCircle, MessageSquare, TrendingUp,
-  FileSignature, Loader2, ShieldCheck, X, Copy, MapPin,
-  CalendarDays, Scaling
+  ArrowLeft, FileText, Map, Coins, Download, Eye,
+  CheckCircle, XCircle, Upload, Satellite, ImageIcon, X, Activity
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
-import EvidenceHub from './EvidenceHub';
+import VerificationMap from './VerificationMap.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// Import statements for the images
-import mapSnapshotImage from '@/assets/assets23.jpg';
-import solTokenImage from '@/assets/sol.webp';
+// Import document images
+import doc1Image from '@/assets/doc1.png';
+import doc2Image from '@/assets/doc2.png';
+import doc3Image from '@/assets/doc3.png';
+import doc4Image from '@/assets/doc4.png';
+import simageAsset from '@/assets/simage.png';
 
-// =========== TYPE DEFINITIONS for TypeScript =========== //
+// =========== TYPE DEFINITIONS =========== //
 
-type ProjectStatus = 'Pending' | 'Approved' | 'Rejected';
-
-interface ChecklistItem {
-  id: string;
-  label: string;
-  status: 'completed' | 'warning';
-  description: string;
-}
-
-interface HighlightedEntity {
-  text: string;
-  type: 'name' | 'coordinate' | 'legal_clause';
-  confidence: number;
-}
+type ActiveTab = 'documents' | 'map' | 'minting';
 
 interface Document {
   id: string;
   name: string;
-  type: 'pdf' | 'docx' | 'jpg';
+  type: 'pdf' | 'docx' | 'jpg' | 'zip';
   size: string;
   uploadDate: string;
-  ocrText?: string;
-  ocrAccuracy?: number;
-  highlighted_entities?: HighlightedEntity[];
-}
-
-interface MapLayer {
-  id: string;
-  name: string;
-  type: 'satellite' | 'photo' | 'analysis';
-  date: string;
-  enabled: boolean;
-}
-
-interface PhotoPin {
-  id: string;
-  lat: number;
-  lng: number;
-  title: string;
-  date: string;
-  thumbnail: string;
-}
-
-interface AnalysisArea {
-  id: string;
-  type: 'concern' | 'growth';
-  coordinates: number[][];
-  description: string;
-}
-
-interface AuditTrailEntry {
-  id: string;
-  timestamp: string;
-  actor: string;
-  action: string;
-  details: string;
-}
-
-interface Message {
-  id: string;
-  sender: string;
-  senderType: 'ngo' | 'system';
-  message: string;
-  timestamp: string;
-  read: boolean;
+  imageUrl: string;
 }
 
 interface ProjectData {
@@ -94,161 +40,533 @@ interface ProjectData {
   hectares: number;
   carbonClaim: number;
   dateSubmitted: string;
-  confidenceScore: number;
-  aiRecommendation: 'Data Sufficient' | 'Field Visit Recommended' | 'In Review';
-  aiSummary: string;
-  checklistItems: ChecklistItem[];
   documents: Document[];
-  projectBounds: number[][];
-  mapLayers: MapLayer[];
-  photoPins: PhotoPin[];
-  analysisAreas: AnalysisArea[];
-  auditTrail: AuditTrailEntry[];
-  messages: Message[];
 }
 
-// =========== MOCK PROJECT DATA OUTSIDE COMPONENT =========== //
+// =========== MOCK DATA =========== //
 
 const MOCK_PROJECT_DATA: ProjectData = {
-  id: '1',
+  id: 'BCR-001',
   name: 'Mombasa Mangrove Restoration',
   ngoName: 'Ocean Conservation Trust',
   location: 'Mombasa, Kenya',
   hectares: 150,
   carbonClaim: 2500,
   dateSubmitted: '2025-09-15',
-  confidenceScore: 72,
-  aiRecommendation: 'Field Visit Recommended',
-  aiSummary: `The submitted land ownership deed (doc_1.pdf) was successfully processed via OCR, and the stated coordinates align with the project's geographic boundaries. However, a 15% discrepancy was noted between the claimed biomass density in the northern sector and our analysis of Sentinel-2 satellite imagery from August 2025...`,
-  checklistItems: [
-    { id: '1', label: 'Document Authenticity', status: 'completed', description: 'OCR data is clear and consistent' },
-    { id: '2', label: 'Geospatial Integrity', status: 'completed', description: 'Boundaries match land deeds' },
-    { id: '3', label: 'Visual Evidence Correlation', status: 'warning', description: 'NGO imagery partially conflicts with satellite data' },
-    { id: '4', label: 'Methodology Compliance', status: 'completed', description: 'Aligns with Verra VCS standards' },
-    { id: '5', label: 'Temporal Analysis', status: 'warning', description: 'Growth patterns require field verification' }
-  ],
   documents: [
-    { id: '1', name: 'land_ownership_deed.pdf', type: 'pdf', size: '2.4 MB', uploadDate: '2025-09-15', highlighted_entities: [{ text: 'Ocean Conservation NGO', type: 'name', confidence: 0.99 }] },
-    { id: '2', name: 'project_methodology.docx', type: 'docx', size: '1.8 MB', uploadDate: '2025-09-15' },
-    { id: '3', name: 'field_photos_2025.zip', type: 'jpg', size: '45.2 MB', uploadDate: '2025-09-15' }
-  ],
-  projectBounds: [[-4.0435, 39.6682], [-4.0445, 39.6692], [-4.0455, 39.6685], [-4.0450, 39.6675]],
-  mapLayers: [{ id: 'satellite-2025', name: 'Sentinel-2 Latest', type: 'satellite', date: '2025-09-10', enabled: true }],
-  photoPins: [{ id: '1', lat: -4.0440, lng: 39.6685, title: 'Northern Sector', date: '2025-09-15', thumbnail: '' }],
-  analysisAreas: [{ id: '1', type: 'concern', coordinates: [[-4.0435, 39.6685], [-4.0440, 39.6690]], description: '15% biomass discrepancy detected.' }],
-  auditTrail: [{ id: '1', timestamp: '2025-09-15 11:40 AM', actor: 'NGO', action: 'Project Submitted', details: 'Initial submission' }],
-  messages: [{ id: '1', sender: 'Ocean Conservation Trust', senderType: 'ngo', message: 'Hello, we have submitted our project for verification.', timestamp: '2025-09-15 12:00 PM', read: true }]
+    { id: '1', name: 'land_ownership_deed.pdf', type: 'pdf', size: '2.4 MB', uploadDate: '2025-09-15', imageUrl: doc1Image },
+    { id: '2', name: 'Community / NGO Agreements.docx', type: 'docx', size: '1.8 MB', uploadDate: '2025-09-15', imageUrl: doc2Image },
+    { id: '3', name: 'field_photos_2025.zip', type: 'zip', size: '45.2 MB', uploadDate: '2025-09-15', imageUrl: doc3Image },
+    { id: '4', name: 'Plantation / Restoration Proof.pdf', type: 'pdf', size: '3.2 MB', uploadDate: '2025-09-15', imageUrl: doc4Image },
+  ]
 };
 
-// =========== PROJECT SUMMARY CARDS =========== //
-
-const PROJECT_SUMMARY_CARDS = [
-  { icon: TrendingUp, label: "Carbon Claim", value: (data: ProjectData) => `${data.carbonClaim.toLocaleString()} tCO₂e` },
-  { icon: Scaling, label: "Area", value: (data: ProjectData) => `${data.hectares} Hectares` },
-  { icon: MapPin, label: "Location", value: (data: ProjectData) => data.location },
-  { icon: CalendarDays, label: "Submitted", value: (data: ProjectData) => data.dateSubmitted }
-];
-
-// =========== REACT COMPONENT =========== //
+// =========== MAIN COMPONENT =========== //
 
 const ProjectVerificationWorkspace: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [projectStatus, setProjectStatus] = useState<ProjectStatus>('Pending');
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('documents');
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [scanningBoxes, setScanningBoxes] = useState<any[]>([]);
+  const [analysis, setAnalysis] = useState({
+    keyFieldsMatch: true,
+    contentValid: true,
+    overallValid: true
+  });
 
-  const [isSigningModalOpen, setIsSigningModalOpen] = useState<boolean>(false);
-  const [signingStep, setSigningStep] = useState<'confirm' | 'processing' | 'complete'>('confirm');
-  const [transactionHash, setTransactionHash] = useState<string>('');
-
-  // Use correct project data for view (static/mocked here)
   const projectData = useMemo(() => ({
     ...MOCK_PROJECT_DATA,
     id: projectId || MOCK_PROJECT_DATA.id,
   }), [projectId]);
 
-  // BADGES: Memoized for performance
-  const getStatusBadge = useMemo(() => {
-    switch (projectStatus) {
-      case 'Approved':
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 shadow-sm hover:bg-green-500/30 transition-colors">Approved</Badge>;
-      case 'Rejected':
-        return <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-red-500/30 shadow-sm hover:bg-red-500/30 transition-colors">Rejected</Badge>;
-      default:
-        return <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-sm">Under Review</Badge>;
-    }
-  }, [projectStatus]);
+  const handleViewDocument = (doc: Document) => {
+    setSelectedDocument(doc);
+    setIsDocumentModalOpen(true);
+    // Reset analysis state when opening new document
+    setIsScanning(false);
+    setAnalysisComplete(false);
+    setScanningBoxes([]);
+  };
 
-  const getAIRecommendationBadge = useMemo(() => {
-    switch (projectData.aiRecommendation) {
-      case 'Data Sufficient':
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 shadow-sm">AI Confidence: {projectData.confidenceScore}% (Data Sufficient)</Badge>;
-      case 'Field Visit Recommended':
-        return <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-sm">AI Confidence: {projectData.confidenceScore}% (Field Visit Recommended)</Badge>;
-      default:
-        return <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 shadow-sm">AI: In Review</Badge>;
-    }
-  }, [projectData.aiRecommendation, projectData.confidenceScore]);
-
-  // HANDLERS: Memoized if useful or static; otherwise inline
-  const handleApprove = useCallback(() => {
-    setIsSigningModalOpen(true);
-  }, []);
-
-  const handleConfirmSign = useCallback(() => {
-    setIsProcessing(true);
-    setSigningStep('processing');
+  const handleCloseDocumentModal = () => {
+    setIsDocumentModalOpen(false);
     setTimeout(() => {
-      const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      setTransactionHash(mockTxHash);
-      setSigningStep('complete');
-      setProjectStatus('Approved');
-      toast({
-        title: "Transaction Successful",
-        description: "Carbon credits have been minted on the Solana blockchain.",
-      });
-      setIsProcessing(false);
-    }, 3500);
-  }, [toast]);
-
-  const handleCloseModal = useCallback(() => {
-    setIsSigningModalOpen(false);
-    setTimeout(() => {
-      setSigningStep('confirm');
-      setTransactionHash('');
+      setSelectedDocument(null);
+      setIsScanning(false);
+      setAnalysisComplete(false);
+      setScanningBoxes([]);
     }, 300);
-  }, []);
+  };
 
-  const handleReject = useCallback(() => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      setProjectStatus('Rejected');
-      toast({
-        title: 'Project Submitted for Rejection',
-        description: 'A senior verifier must confirm this decision.',
-        variant: 'destructive',
-      });
-      setIsProcessing(false);
-    }, 1500);
-  }, [toast]);
+  const getDocumentSpecificBoxes = (documentName: string) => {
+    switch (documentName) {
+      case 'land_ownership_deed.pdf':
+        return [
+          { x: 15, y: 20, width: 40, height: 8, status: 'pending', label: 'Certificate Title Authentication' },
+          { x: 55, y: 30, width: 35, height: 6, status: 'pending', label: 'Proprietor Name Verification' },
+          { x: 12, y: 45, width: 45, height: 10, status: 'pending', label: 'Property Description & Lot Details' },
+          { x: 20, y: 65, width: 30, height: 8, status: 'pending', label: 'Registration Date Validation' },
+          { x: 60, y: 75, width: 28, height: 8, status: 'pending', label: 'Official Seals & Signatures' },
+          { x: 25, y: 85, width: 35, height: 6, status: 'pending', label: 'Folio Number Authentication' },
+        ];
+      case 'Community / NGO Agreements.docx':
+        return [
+          { x: 10, y: 15, width: 45, height: 10, status: 'pending', label: 'Certificate of Incorporation Verification' },
+          { x: 60, y: 25, width: 32, height: 8, status: 'pending', label: 'Ministry of Corporate Affairs Seal' },
+          { x: 15, y: 40, width: 42, height: 12, status: 'pending', label: 'Foundation Name & Legal Status' },
+          { x: 12, y: 60, width: 38, height: 8, status: 'pending', label: 'Companies Act 2013 Compliance' },
+          { x: 55, y: 70, width: 30, height: 10, status: 'pending', label: 'Incorporation Date Authentication' },
+          { x: 20, y: 85, width: 50, height: 8, status: 'pending', label: 'Project Site Location Mapping' },
+        ];
+      case 'field_photos_2025.zip':
+        return [
+          { x: 8, y: 12, width: 25, height: 18, status: 'pending', label: 'Regional Map Analysis' },
+          { x: 38, y: 12, width: 28, height: 18, status: 'pending', label: 'Satellite Imagery Verification' },
+          { x: 72, y: 12, width: 25, height: 18, status: 'pending', label: 'Restoration Plot Boundaries' },
+          { x: 15, y: 40, width: 35, height: 15, status: 'pending', label: 'Sundarban Biosphere Reserve ID' },
+          { x: 55, y: 45, width: 32, height: 12, status: 'pending', label: 'Mangrove Growth Documentation' },
+          { x: 25, y: 70, width: 45, height: 15, status: 'pending', label: 'Geographic Coordinate Validation' },
+        ];
+      case 'Plantation / Restoration Proof.pdf':
+        return [
+          { x: 12, y: 18, width: 38, height: 12, status: 'pending', label: 'Multi-Site Project Scope Analysis' },
+          { x: 55, y: 25, width: 35, height: 10, status: 'pending', label: 'Ecosystem Recovery Stages' },
+          { x: 20, y: 45, width: 40, height: 8, status: 'pending', label: 'River Channel Documentation' },
+          { x: 65, y: 50, width: 30, height: 12, status: 'pending', label: 'Mudflat Restoration Evidence' },
+          { x: 15, y: 70, width: 42, height: 10, status: 'pending', label: 'Root System Development' },
+          { x: 25, y: 85, width: 48, height: 8, status: 'pending', label: 'MRV Process Compliance Check' },
+        ];
+      default:
+        return [];
+    }
+  };
 
-  const handleRequestInfo = useCallback(() => {
-    toast({
-      title: 'Information Request Sent',
-      description: 'A message has been sent to the NGO.',
+  const startAIAnalysis = () => {
+    if (!selectedDocument) return;
+    
+    setIsScanning(true);
+    setAnalysisComplete(false);
+    
+    const initialBoxes = getDocumentSpecificBoxes(selectedDocument.name);
+    setScanningBoxes(initialBoxes);
+
+    // Animate each box sequentially with 3.5-4.5 second total duration
+    const totalDuration = 4200; // 4.2 seconds total
+    const boxDelay = totalDuration / (initialBoxes.length + 1); // Distribute timing evenly
+    const scanningDuration = 700; // How long each box shows "scanning" state
+
+    initialBoxes.forEach((_, index) => {
+      setTimeout(() => {
+        setScanningBoxes(prev => 
+          prev.map((box, i) => 
+            i === index ? { ...box, status: 'scanning' } : box
+          )
+        );
+        
+        // After scanning animation, set final status
+        setTimeout(() => {
+          setScanningBoxes(prev => 
+            prev.map((box, i) => {
+              if (i === index) {
+                // All documents are verified based on your provided analysis
+                return { ...box, status: 'verified' };
+              }
+              return box;
+            })
+          );
+        }, scanningDuration);
+      }, index * boxDelay);
     });
-  }, [toast]);
 
-  // ========== RENDER ==========
+    // Complete analysis after all boxes are processed
+    setTimeout(() => {
+      setIsScanning(false);
+      setAnalysisComplete(true);
+      toast({
+        title: "AI Analysis Complete",
+        description: "Document verification has been processed successfully.",
+      });
+    }, totalDuration + 500);
+  };
+
+  const getDocumentInsights = (documentName: string) => {
+    switch (documentName) {
+      case 'land_ownership_deed.pdf':
+        return [
+          { type: 'success', text: 'Certificate confirms William Seguro as the registered proprietor of Lot 124 in Deposited Plan 1234567.' },
+          { type: 'success', text: 'Official registration under Property Law Act, 1974 within Torrens Title system verified.' },
+          { type: 'success', text: 'Document contains authentic official seals, registrar signature, and unique folio number.' },
+          { type: 'info', text: 'Title transfer and registration completed on July 12, 2012 - provides legal foundation for property activities.' },
+          { type: 'success', text: 'State-guaranteed title system ensures clear and undisputed ownership of specified land parcel.' },
+        ];
+      case 'Community / NGO Agreements.docx':
+        return [
+          { type: 'success', text: 'Certificate of Incorporation issued by Government of India Ministry of Corporate Affairs verified.' },
+          { type: 'success', text: 'Innovation Foundation officially incorporated under Indian Companies Act, 2013 on March 5, 2021.' },
+          { type: 'info', text: 'Legal entity status confirmed - authorized for binding agreements, project management, and funding.' },
+          { type: 'success', text: 'Mangrove restoration site within Sundarban Biosphere Reserve clearly delineated with satellite imagery.' },
+          { type: 'success', text: 'Project area boundaries outlined in yellow provide concrete geographic scope for milestone tracking.' },
+          { type: 'info', text: 'Visual documentation includes regional maps and photographs of dense mangrove growth along riverbank.' },
+        ];
+      case 'field_photos_2025.zip':
+        return [
+          { type: 'success', text: 'Regional map analysis confirms project location within designated Sundarban Biosphere Reserve.' },
+          { type: 'success', text: 'Satellite imagery verification shows clearly defined restoration plot boundaries in yellow markers.' },
+          { type: 'info', text: 'Visual evidence provides concrete, verifiable proof of project\'s precise location and physical scope.' },
+          { type: 'success', text: 'Geographic coordinates validated against official Sundarban reserve boundaries.' },
+          { type: 'success', text: 'Photographic documentation shows dense mangrove growth along riverbank areas.' },
+          { type: 'info', text: 'Essential for milestone tracking and site verification processes in restoration project.' },
+        ];
+      case 'Plantation / Restoration Proof.pdf':
+        return [
+          { type: 'success', text: 'Comprehensive visual evidence demonstrates restoration work across five distinct study sites.' },
+          { type: 'success', text: 'Documentation covers multiple ecosystem recovery stages from sparse mudflat growth to established trees.' },
+          { type: 'info', text: 'Wide river channels and complex mangrove root systems photographically documented.' },
+          { type: 'success', text: 'Project scale verified through variety of images showing different restoration phases.' },
+          { type: 'success', text: 'Robust on-the-ground proof validates implementation of restoration activities across multiple sites.' },
+          { type: 'info', text: 'Critical documentation for Monitoring, Reporting, and Verification (MRV) processes compliance.' },
+        ];
+      default:
+        return [
+          { type: 'info', text: 'Document analysis completed using standard verification protocols.' },
+          { type: 'success', text: 'No major inconsistencies detected in the submitted documentation.' },
+        ];
+    }
+  };
+
+  // =========== TAB CONTENT COMPONENTS =========== //
+
+  const DocumentsTab = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-semibold text-foreground">Project Documents</h3>
+        <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+          {projectData.documents.length} Documents
+        </Badge>
+      </div>
+      
+      <div className="grid gap-4">
+        {projectData.documents.map((doc) => (
+          <Card key={doc.id} className="hover:shadow-md transition-all duration-300 border-border/50 bg-card/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <FileText className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground">{doc.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {doc.size} • Uploaded: {doc.uploadDate}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="hover:bg-accent"
+                    onClick={() => handleViewDocument(doc)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                  
+                  <Button variant="outline" size="sm" className="hover:bg-accent">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <Card className="border-dashed border-2 border-border/50 bg-muted/20">
+        <CardContent className="p-8 text-center">
+          <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h4 className="text-lg font-semibold text-foreground mb-2">Upload Additional Documents</h4>
+          <p className="text-muted-foreground mb-4">Drag and drop files here or click to browse</p>
+          <Button className="bg-primary hover:bg-primary/90">
+            <Upload className="h-4 w-4 mr-2" />
+            Browse Files
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const MapTab = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-semibold text-foreground">Blue Carbon Sentinel Map & AI Analysis</h3>
+        <div className="flex space-x-2">
+          <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+            <Satellite className="h-3 w-3 mr-1" />
+            LIVE Satellite Data
+          </Badge>
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+            ⚡ WebGL GPU
+          </Badge>
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+            🆓 MapLibre GL JS
+          </Badge>
+        </div>
+      </div>
+      
+      <div className="flex gap-6 h-[700px]">
+        {/* Blue Carbon Sentinel Map in the target div */}
+        <div className="flex-1 bg-muted/20 rounded-lg border border-border/50 overflow-hidden">
+          <VerificationMap 
+            projectId={projectData.id}
+            centerCoordinate={[-10.9, -69.53]}
+            height="100%"
+            className="w-full h-full"
+          />
+        </div>
+        
+        {/* Right side - Map Controls and Satellite Info */}
+        <div className="w-80 flex flex-col space-y-4">
+          {/* Satellite Image Info */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center">
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Current Satellite View
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="relative">
+                <img 
+                  src={simageAsset} 
+                  alt="Satellite Imagery" 
+                  className="w-full h-32 object-cover rounded-lg border border-border/20"
+                />
+                <div className="absolute top-2 right-2">
+                  <Badge className="bg-red-500 text-white border-red-500 text-xs">
+                    LIVE
+                  </Badge>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>Source: Sentinel-2 • Date: Sep 29, 2025</div>
+                <div>Resolution: 10m • Cloud Coverage: 5%</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Map Control Panel */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center">
+                <Map className="h-4 w-4 mr-2" />
+                Map Controls
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* View Mode Toggle */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">View Mode</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="default" size="sm" className="text-xs">
+                    <Map className="h-3 w-3 mr-1" />
+                    2D
+                  </Button>  
+                  <Button variant="outline" size="sm" className="text-xs">
+                    <Satellite className="h-3 w-3 mr-1" />
+                    3D
+                  </Button>
+                </div>
+              </div>
+
+              {/* AI Analysis Toggle */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">AI Analysis</label>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">Show AI Overlay</span>
+                  <Button variant="outline" size="sm" className="text-xs h-6">
+                    ON
+                  </Button>
+                </div>
+              </div>
+
+              {/* Layer Selection */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Active Layers</label>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Satellite Base</span>
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>AI Analysis</span>
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Project Boundary</span>
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-2">
+                <Button className="w-full text-xs" size="sm">
+                  <Satellite className="h-3 w-3 mr-2" />
+                  Refresh Satellite Data
+                </Button>
+                <Button variant="outline" className="w-full text-xs" size="sm">
+                  <Download className="h-3 w-3 mr-2" />
+                  Export Analysis
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Analysis Summary */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center">
+                <Activity className="h-4 w-4 mr-2" />
+                Analysis Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="text-center p-2 bg-green-50 dark:bg-green-950/20 rounded">
+                  <div className="font-bold text-green-600">2</div>
+                  <div className="text-muted-foreground">Healthy Areas</div>
+                </div>
+                <div className="text-center p-2 bg-red-50 dark:bg-red-950/20 rounded">
+                  <div className="font-bold text-red-600">1</div>
+                  <div className="text-muted-foreground">Concern Areas</div>
+                </div>
+              </div>
+              <div className="space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">AI Confidence:</span>
+                  <span className="font-medium">91%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Last Updated:</span>
+                  <span className="font-medium">2m ago</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Coverage:</span>
+                  <span className="font-medium">150 hectares</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+
+  const MintingTab = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h3 className="text-2xl font-semibold text-foreground">Carbon Credit Minting</h3>
+        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+          Ready for Minting
+        </Badge>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Project Summary for Minting */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Coins className="h-5 w-5 mr-2 text-primary" />
+              Project Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Project Name:</span>
+                <span className="font-medium">{projectData.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Area:</span>
+                <span className="font-medium">{projectData.hectares} Hectares</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Carbon Claim:</span>
+                <span className="font-bold text-green-500">{projectData.carbonClaim.toLocaleString()} tCO₂e</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Verification Status:</span>
+                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Verified
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Minting Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Minting Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approve & Mint Credits
+              </Button>
+              
+              <Button variant="destructive" className="w-full">
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject Project
+              </Button>
+              
+              <Button variant="outline" className="w-full">
+                Request Additional Information
+              </Button>
+            </div>
+            
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+              <h4 className="font-semibold mb-2">Minting Details</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Network:</span>
+                  <span>Solana</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Token Standard:</span>
+                  <span>SPL-Token</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Estimated Fee:</span>
+                  <span>~0.00005 SOL</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  // =========== RENDER =========== //
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="max-w-8xl mx-auto space-y-6">
+    <div className="">
+      <div className="max-w-7xl mx-auto space-y-8">
         <DashboardHeader 
           title="Project Verification Workspace"
-          subtitle="Detailed Evidence Analysis & Decision Making"
+          subtitle="Comprehensive project review and verification system"
         />
 
         <Button
@@ -260,193 +578,311 @@ const ProjectVerificationWorkspace: React.FC = () => {
           Back to Dashboard
         </Button>
 
-        <Card className="shadow-lg bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-4 lg:space-y-0">
-              <div>
-                <CardTitle className="text-3xl font-bold tracking-tight text-foreground">{projectData.name}</CardTitle>
-                <p className="text-muted-foreground mt-2">
-                  ID: {projectData.id} • Submitted by <span className="font-medium text-foreground/80">{projectData.ngoName}</span>
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
-                {getAIRecommendationBadge}
-                {getStatusBadge}
-              </div>
+        {/* Project Header */}
+        <div className="bg-gradient-to-r from-blue-50/50 to-green-50/50 dark:from-blue-950/20 dark:to-green-950/20 rounded-xl p-6 border border-border/50">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">{projectData.name}</h1>
+              <p className="text-muted-foreground mt-1">
+                Project ID: {projectData.id} • Submitted by {projectData.ngoName}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {PROJECT_SUMMARY_CARDS.map((item, index) => (
-                <div key={index} className="bg-muted/40 p-4 rounded-lg border border-border/50 group hover:bg-muted/80 hover:border-primary/50 transition-all duration-300">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-background rounded-md border border-border/50">
-                      <item.icon className="h-6 w-6 text-primary transition-transform duration-300 group-hover:scale-110" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">{item.label}</p>
-                      <p className="font-bold text-lg text-foreground">{item.value(projectData)}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center space-x-3">
+              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                {projectData.location}
+              </Badge>
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                {projectData.hectares} Hectares
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card className="shadow-lg bg-card/80 backdrop-blur-sm border-border/50">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold tracking-tight">Verification Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-4">
-              <Button
-                onClick={handleApprove}
-                disabled={isProcessing || projectStatus !== 'Pending'}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold transition-all duration-300 hover:scale-105 group shadow-md hover:shadow-lg hover:shadow-green-500/20"
-              >
-                <CheckCircle className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-12" />
-                Approve & Mint Credits
-              </Button>
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 p-1 bg-muted/30 rounded-lg border border-border/50">
+          <Button
+            variant={activeTab === 'documents' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('documents')}
+            className={`flex-1 ${activeTab === 'documents' 
+              ? 'bg-background text-foreground shadow-sm' 
+              : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Documents
+          </Button>
+          
+          <Button
+            variant={activeTab === 'map' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('map')}
+            className={`flex-1 ${activeTab === 'map' 
+              ? 'bg-background text-foreground shadow-sm' 
+              : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Map className="h-4 w-4 mr-2" />
+            Map & Imagery
+          </Button>
+          
+          <Button
+            variant={activeTab === 'minting' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('minting')}
+            className={`flex-1 ${activeTab === 'minting' 
+              ? 'bg-background text-foreground shadow-sm' 
+              : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Coins className="h-4 w-4 mr-2" />
+            Minting
+          </Button>
+        </div>
 
-              <Button
-                variant="destructive"
-                onClick={handleReject}
-                disabled={isProcessing || projectStatus !== 'Pending'}
-                className="transition-all duration-300 hover:scale-105 group shadow-md hover:shadow-lg hover:shadow-red-500/20"
-              >
-                <XCircle className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:rotate-12" />
-                Reject Project
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={handleRequestInfo}
-                disabled={isProcessing || projectStatus !== 'Pending'}
-                className="transition-all duration-300 hover:scale-105 hover:bg-accent hover:border-primary/50 group"
-              >
-                <MessageSquare className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:-rotate-12" />
-                Request More Information
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <EvidenceHub projectData={projectData} />
+        {/* Tab Content */}
+        <div className="min-h-[600px]">
+          {activeTab === 'documents' && <DocumentsTab />}
+          {activeTab === 'map' && <MapTab />}
+          {activeTab === 'minting' && <MintingTab />}
+        </div>
       </div>
 
+      {/* Document Viewer Modal */}
       <AnimatePresence>
-        {isSigningModalOpen && (
+        {isDocumentModalOpen && selectedDocument && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+            onClick={handleCloseDocumentModal}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="relative w-full max-w-6xl max-h-[90vh] bg-background rounded-xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
             >
-              <Card className="w-full max-w-xl shadow-2xl bg-card border-border/50">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg font-semibold flex items-center">
-                        <FileSignature className="h-5 w-5 mr-2 text-primary" />
-                        Sign Contract & Issue Credits
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Review the details before broadcasting to the blockchain.
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-full -mt-2 -mr-2"
-                      onClick={handleCloseModal}
-                      disabled={isProcessing}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/20">
+                <div className="flex items-center space-x-3">
+                  <FileText className="h-6 w-6 text-primary" />
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground">{selectedDocument.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedDocument.size} • {selectedDocument.type.toUpperCase()}
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {signingStep === 'confirm' && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 group">
-                          <p className="text-sm font-semibold">Project Evidence Snapshot</p>
-                          <div className="aspect-video rounded-lg overflow-hidden border border-border/50 group-hover:border-primary/50 transition-all duration-300 p-1">
-                            <img src={mapSnapshotImage} alt="Project map snapshot" className="w-full h-full object-cover rounded-md transition-transform duration-300 group-hover:scale-105" />
-                          </div>
-                        </div>
-                        <div className="space-y-2 group">
-                          <p className="text-sm font-semibold">Digital Asset Preview</p>
-                          <div className="aspect-video rounded-lg overflow-hidden border border-border/50 group-hover:border-primary/50 transition-all duration-300 p-1">
-                            <img src={solTokenImage} alt="Solana carbon credit token" className="w-full h-full object-cover rounded-md transition-transform duration-300 group-hover:scale-105" />
-                          </div>
-                        </div>
-                      </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-muted"
+                  onClick={handleCloseDocumentModal}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
 
-                      <div className="border border-border/50 bg-muted/40 rounded-lg p-4 space-y-3 text-sm">
-                        <div className="flex justify-between items-center">
-                          <span>Project:</span>
-                          <span className="font-medium text-right text-foreground">{projectData.name}</span>
+              {/* Modal Content */}
+              <div className="p-6 overflow-auto max-h-[calc(90vh-200px)]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Document Image Section */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-foreground flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-primary" />
+                      Document View
+                    </h4>
+                    <div className="relative">
+                      <img 
+                        src={selectedDocument.imageUrl} 
+                        alt={selectedDocument.name}
+                        className="w-full h-auto rounded-lg shadow-lg border border-border/20"
+                        style={{ maxHeight: '500px', objectFit: 'contain' }}
+                      />
+                      
+                      {/* Overlay Scanning Boxes */}
+                      {isScanning && (
+                        <div className="absolute inset-0">
+                          {scanningBoxes.map((box, index) => (
+                            <motion.div
+                              key={index}
+                              className={`absolute border-2 rounded ${
+                                box.status === 'scanning' 
+                                  ? 'border-yellow-400 bg-yellow-400/20' 
+                                  : box.status === 'verified'
+                                  ? 'border-green-400 bg-green-400/20'
+                                  : box.status === 'warning'
+                                  ? 'border-orange-400 bg-orange-400/20'
+                                  : 'border-gray-400 bg-gray-400/20'
+                              }`}
+                              style={{
+                                left: `${box.x}%`,
+                                top: `${box.y}%`,
+                                width: `${box.width}%`,
+                                height: `${box.height}%`,
+                              }}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: index * 0.3 }}
+                            >
+                              <div className="absolute -bottom-8 left-0 bg-background/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium border border-border/50">
+                                {box.status === 'scanning' && (
+                                  <span className="text-yellow-600 flex items-center">
+                                    <motion.div
+                                      className="w-2 h-2 bg-yellow-400 rounded-full mr-1"
+                                      animate={{ opacity: [1, 0.3, 1] }}
+                                      transition={{ repeat: Infinity, duration: 0.8 }}
+                                    />
+                                    Analyzing...
+                                  </span>
+                                )}
+                                {box.status === 'verified' && (
+                                  <span className="text-green-600 flex items-center">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Verified
+                                  </span>
+                                )}
+                                {box.status === 'warning' && (
+                                  <span className="text-orange-600 flex items-center">
+                                    <XCircle className="w-3 h-3 mr-1" />
+                                    Check Required
+                                  </span>
+                                )}
+                                <div className="text-[10px] text-muted-foreground">{box.label}</div>
+                              </div>
+                            </motion.div>
+                          ))}
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span>Credits to Mint:</span>
-                          <span className="font-bold text-green-500 text-right">{projectData.carbonClaim.toLocaleString()} CO₂e Tokens</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span>Network Fee (Solana):</span>
-                          <span className="font-mono text-muted-foreground text-right">~0.00005 SOL</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-4 pt-2">
-                        <Button variant="outline" className="w-full hover:bg-accent hover:border-primary/50" onClick={handleCloseModal}>Cancel</Button>
-                        <Button className="w-full bg-primary hover:bg-primary/90 transition-transform hover:scale-105 shadow-md shadow-primary/20" onClick={handleConfirmSign}>Confirm & Sign On-Chain</Button>
-                      </div>
+                      )}
                     </div>
-                  )}
+                  </div>
 
-                  {signingStep === 'processing' && (
-                    <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[300px] relative overflow-hidden">
-                      <div className="absolute inset-0 bg-primary/5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
-                      <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                      <p className="font-semibold text-lg text-foreground">Processing Transaction</p>
-                      <p className="text-sm text-muted-foreground max-w-xs">
-                        Broadcasting to the Solana network. This may take a few moments. Please don't close this window.
-                      </p>
+                  {/* AI Analysis Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-lg font-semibold text-foreground flex items-center">
+                        <Satellite className="h-5 w-5 mr-2 text-primary" />
+                        AI Analysis
+                      </h4>
+                      <Button
+                        onClick={startAIAnalysis}
+                        disabled={isScanning}
+                        className={`${
+                          isScanning 
+                            ? 'bg-yellow-500 hover:bg-yellow-600' 
+                            : analysisComplete
+                            ? 'bg-green-500 hover:bg-green-600'
+                            : 'bg-primary hover:bg-primary/90'
+                        } transition-all duration-300`}
+                      >
+                        {isScanning ? (
+                          <>
+                            <motion.div
+                              className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full"
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            />
+                            Scanning...
+                          </>
+                        ) : analysisComplete ? (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Analysis Complete
+                          </>
+                        ) : (
+                          'Start AI Analysis'
+                        )}
+                      </Button>
                     </div>
-                  )}
 
-                  {signingStep === 'complete' && (
-                    <div className="flex flex-col items-center justify-center text-center p-6 space-y-4 min-h-[300px]">
-                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200, damping: 10 }}>
-                        <ShieldCheck className="h-14 w-14 text-green-500" />
-                      </motion.div>
-                      <p className="font-semibold text-xl text-foreground">Transaction Successful!</p>
-                      <p className="text-sm text-muted-foreground">
-                        {projectData.carbonClaim.toLocaleString()} carbon credits have been successfully minted.
-                      </p>
-                      <div className="w-full bg-muted/50 p-3 rounded-md border border-border/50 text-left relative group">
-                        <p className="text-xs text-muted-foreground">Solana Transaction Signature</p>
-                        <p className="font-mono text-xs break-all text-foreground">{transactionHash}</p>
-                        <Button variant="ghost" size="icon"
-                          className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => { navigator.clipboard.writeText(transactionHash); toast({ title: 'Copied to clipboard!' }); }}
+                    {/* Analysis Results */}
+                    <div className="space-y-4">
+                      {analysisComplete && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.5 }}
+                          className="bg-muted/30 rounded-lg p-4 border border-border/50"
                         >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <Button className="w-full mt-4 bg-primary hover:bg-primary/90" onClick={handleCloseModal}>Done</Button>
-                    </div>
-                  )}
+                          <h5 className="font-semibold text-foreground mb-3">Verification Summary</h5>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Key Fields</span>
+                              <Badge variant={analysis.keyFieldsMatch ? "default" : "destructive"}>
+                                {analysis.keyFieldsMatch ? 'Match' : 'No Match'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Content Validity</span>
+                              <Badge variant={analysis.contentValid ? "default" : "destructive"}>
+                                {analysis.contentValid ? 'Valid' : 'Invalid'}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm">Overall Status</span>
+                              <Badge variant={analysis.overallValid ? "default" : "destructive"}>
+                                {analysis.overallValid ? 'Approved' : 'Rejected'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
 
-                </CardContent>
-              </Card>
+                      {/* Generated Insights */}
+                      {analysisComplete && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.8 }}
+                          className="bg-gradient-to-br from-blue-50/50 to-green-50/50 dark:from-blue-950/20 dark:to-green-950/20 rounded-lg p-4 border border-border/50"
+                        >
+                          <h5 className="font-semibold text-foreground mb-3 flex items-center">
+                            <Eye className="h-4 w-4 mr-2 text-primary" />
+                            Generated Insights
+                          </h5>
+                          <div className="space-y-3 text-sm">
+                            {getDocumentInsights(selectedDocument.name).map((insight, index) => (
+                              <motion.div
+                                key={index}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 1 + index * 0.2 }}
+                                className="flex items-start space-x-2"
+                              >
+                                <div className={`w-2 h-2 rounded-full mt-2 ${
+                                  insight.type === 'success' ? 'bg-green-500' :
+                                  insight.type === 'warning' ? 'bg-orange-500' :
+                                  'bg-blue-500'
+                                }`} />
+                                <p className="text-muted-foreground leading-relaxed">{insight.text}</p>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between p-6 border-t border-border/50 bg-muted/20 mt-auto">
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="text-xs">
+                    Uploaded: {selectedDocument.uploadDate}
+                  </Badge>
+                </div>
+                <div className="flex space-x-3">
+                  <Button variant="outline" className="hover:bg-accent">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Original
+                  </Button>
+                  <Button className="bg-primary hover:bg-primary/90">
+                    Mark as Reviewed
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
