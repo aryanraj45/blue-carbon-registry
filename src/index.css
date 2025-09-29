@@ -132,3 +132,161 @@ All colors MUST be HSL.
     background-position: 350% 50%, 350% 50%;
   }
 }
+
+/* Solana Wallet Adapter Button Fixes - Ultra Aggressive */
+@layer components {
+  /* Maximum specificity targeting for wallet buttons */
+  html body .wallet-adapter-button,
+  html body .wallet-adapter-button-trigger,
+  html body button.wallet-adapter-button,
+  html body button.wallet-adapter-button-trigger,
+  div .wallet-adapter-button,
+  div .wallet-adapter-button-trigger,
+  [class*="wallet-adapter-button"] {
+    max-width: 160px !important;
+    min-width: 100px !important;
+    width: auto !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    padding: 8px 12px !important;
+    min-height: 36px !important;
+    height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    border-radius: 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Target ALL inner elements with maximum specificity */
+  html body .wallet-adapter-button *,
+  html body .wallet-adapter-button-trigger *,
+  div .wallet-adapter-button *,
+  div .wallet-adapter-button-trigger * {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Force text content to stay within bounds */
+  html body .wallet-adapter-button span,
+  html body .wallet-adapter-button-trigger span,
+  html body .wallet-adapter-button > span,
+  html body .wallet-adapter-button-trigger > span,
+  div .wallet-adapter-button span,
+  div .wallet-adapter-button-trigger span,
+  [class*="wallet-adapter-button"] span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 110px !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Icon styling with maximum specificity */
+  html body .wallet-adapter-button .wallet-adapter-button-start-icon,
+  html body .wallet-adapter-button-trigger .wallet-adapter-button-start-icon,
+  html body .wallet-adapter-button svg:first-child,
+  html body .wallet-adapter-button-trigger svg:first-child,
+  div .wallet-adapter-button svg:first-child,
+  div .wallet-adapter-button-trigger svg:first-child {
+    margin-right: 6px !important;
+    flex-shrink: 0 !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px !important;
+    max-width: 16px !important;
+  }
+
+  /* Force container constraints */
+  html body .wallet-adapter-modal,
+  html body .wallet-adapter-dropdown {
+    max-width: 200px !important;
+  }
+
+  /* Mobile specific overrides */
+  @media (max-width: 640px) {
+    html body .wallet-adapter-button,
+    html body .wallet-adapter-button-trigger,
+    div .wallet-adapter-button,
+    div .wallet-adapter-button-trigger,
+    [class*="wallet-adapter-button"] {
+      max-width: 120px !important;
+      min-width: 80px !important;
+      padding: 6px 8px !important;
+      font-size: 12px !important;
+    }
+
+    html body .wallet-adapter-button span,
+    html body .wallet-adapter-button-trigger span,
+    div .wallet-adapter-button span,
+    div .wallet-adapter-button-trigger span,
+    [class*="wallet-adapter-button"] span {
+      max-width: 70px !important;
+    }
+  }
+
+  /* Extra small screens */
+  @media (max-width: 480px) {
+    html body .wallet-adapter-button,
+    html body .wallet-adapter-button-trigger,
+    div .wallet-adapter-button,
+    div .wallet-adapter-button-trigger,
+    [class*="wallet-adapter-button"] {
+      max-width: 100px !important;
+      padding: 4px 6px !important;
+      font-size: 11px !important;
+    }
+
+    html body .wallet-adapter-button span,
+    html body .wallet-adapter-button-trigger span,
+    div .wallet-adapter-button span,
+    div .wallet-adapter-button-trigger span,
+    [class*="wallet-adapter-button"] span {
+      max-width: 50px !important;
+    }
+  }
+
+  /* Hover effects */
+  html body .wallet-adapter-button:hover,
+  html body .wallet-adapter-button-trigger:hover,
+  div .wallet-adapter-button:hover,
+  div .wallet-adapter-button-trigger:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.2s ease-in-out !important;
+  }
+}
+
+/* Ultra High Priority Override Layer - Loads Last */
+@layer overrides {
+  /* Nuclear option - force all wallet buttons to behave */
+  .wallet-adapter-button,
+  .wallet-adapter-button-trigger,
+  button[class*="wallet"],
+  [class*="wallet-adapter"] button {
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    word-wrap: normal !important;
+    word-break: keep-all !important;
+  }
+
+  /* Force all text elements inside wallet buttons */
+  .wallet-adapter-button *,
+  .wallet-adapter-button-trigger *,
+  button[class*="wallet"] *,
+  [class*="wallet-adapter"] button * {
+    max-width: inherit !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
