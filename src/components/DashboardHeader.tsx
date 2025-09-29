@@ -46,9 +46,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ title, subtitle, chil
   }, [navigate]);
 
   return (
-    <header className="w-full sticky top-0 z-50 py-3 px-4 sm:px-6 lg:px-8">
+    <header className="w-full sticky top-0 z-50 py-4 px-6 sm:px-8 lg:px-12">
       <div
-        className="max-w-7xl mx-auto flex h-16 items-center justify-between px-6 sm:px-8 lg:px-10 rounded-full shadow-lg"
+        className="max-w-8xl mx-auto flex h-16 items-center justify-between px-8 sm:px-10 lg:px-12 rounded-full shadow-lg"
         style={{ backgroundColor: '#9370db' }}
       >
         <div className="flex items-center space-x-4">
