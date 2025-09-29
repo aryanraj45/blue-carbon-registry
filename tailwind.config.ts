@@ -96,6 +96,14 @@ export default {
             backgroundPosition: "350% 50%, 350% 50%",
           },
         },
+        shimmer: {
+          "0%": {
+            transform: "translateX(-100%)",
+          },
+          "100%": {
+            transform: "translateX(100%)",
+          },
+        },
         // END: ADDED THIS KEYFRAME
       },
       animation: {
@@ -103,6 +111,7 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         // START: ADDED THIS ANIMATION
         aurora: "aurora 60s linear infinite",
+        shimmer: "shimmer 2s linear infinite",
         // END: ADDED THIS ANIMATION
       },
     },
