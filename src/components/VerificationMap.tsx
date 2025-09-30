@@ -1134,7 +1134,7 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
                     <h5 className="font-semibold text-gray-800 text-center">Final Satellite Analysis</h5>
                     <div className="flex justify-center">
                       <img 
-                        src={analysisImages[analysisImages.length - 1]} 
+                        src={ss1Image} 
                         alt="Final Analysis"
                         className="w-full max-w-4xl h-80 object-contain rounded-lg shadow-lg border border-gray-200"
                       />
