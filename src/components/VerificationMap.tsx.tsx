@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
 import { Slider } from './ui/slider';
+import { Input } from './ui/input';
 import { 
   Satellite, 
   Layers, 
@@ -21,8 +22,17 @@ import {
   ZoomOut,
   Navigation,
   Play,
-  Pause
+  Pause,
+  MapPin,
+  X
 } from 'lucide-react';
+
+// Import analysis images
+import ss1Image from '@/assets/ss1.png';
+import ss2Image from '@/assets/ss2.png';
+import ss33Image from '@/assets/ss33.png';
+import ss4Image from '@/assets/ss4.png';
+import ss5Image from '@/assets/ss5.png';
 
 // Define the props the map will accept
 interface VerificationMapProps {
@@ -73,6 +83,31 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
   const [currentTimeIndex, setCurrentTimeIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [longitude, setLongitude] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showAnalysisPopup, setShowAnalysisPopup] = useState(false);
+  const [analysisStep, setAnalysisStep] = useState<'loading' | 'images' | 'insights'>('loading');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showInsights, setShowInsights] = useState(false);
+
+  // Analysis images from assets folder
+  const analysisImages = [
+    ss1Image,
+    ss2Image, 
+    ss33Image,
+    ss4Image,
+    ss5Image
+  ];
+
+  // AI Analysis insights
+  const analysisInsights = [
+    "Satellite imagery confirms active plantation activities in the designated blue carbon area.",
+    "Vegetation growth patterns indicate successful mangrove restoration with 85% coverage increase.",
+    "Soil analysis shows optimal conditions for blue carbon sequestration with high organic matter content.",
+    "Water quality parameters support healthy ecosystem development for marine life.",
+    "Carbon sequestration rate estimated at 12.5 tCO₂e per hectare annually based on vegetation density."
+  ];
 
   // Blue Carbon Sentinel map layers
   const mapLayers: MapLayer[] = [
@@ -430,6 +465,279 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
     setIs3D(false);
   };
 
+  // Navigate to coordinates
+  const navigateToCoordinates = () => {
+    if (!map.current || !longitude || !latitude) return;
+    
+    const lng = parseFloat(longitude);
+    const lat = parseFloat(latitude);
+    
+    if (isNaN(lng) || isNaN(lat)) return;
+    
+    map.current.easeTo({
+      center: [lng, lat],
+      zoom: 15,
+      duration: 2000
+    });
+
+    new maplibregl.Popup({ closeOnClick: true })
+      .setLngLat([lng, lat])
+      .setHTML(`
+        <div class="p-3 min-w-64">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-bold text-lg">Destination</h4>
+          </div>
+          <p class="text-sm text-gray-700 mb-3">Longitude: ${lng}, Latitude: ${lat}</p>
+        </div>
+      `)
+      .addTo(map.current!);
+  };
+
+  // AI Analysis workflow with zoom animation and analysis boxes
+  const startAIAnalysisWorkflow = () => {
+    if (!map.current || !mapLoaded || isAnalyzing) return;
+    
+    setIsAnalyzing(true);
+    setShowAIAnalysis(true);
+    
+    // Get current map state
+    const originalZoom = map.current.getZoom();
+    const originalCenter = map.current.getCenter();
+    const zoomOut = originalZoom - 2;
+    
+    // Step 1: Zoom out to show wider area (1 second)
+    map.current.easeTo({
+      zoom: zoomOut,
+      duration: 1000,
+      curve: 1
+    });
+
+    // Step 2: Pan around to simulate scanning (2-3 seconds)
+    setTimeout(() => {
+      map.current!.panBy([50, 0], { duration: 800 }); // pan right
+    }, 1000);
+    
+    setTimeout(() => {
+      map.current!.panBy([-100, 0], { duration: 1200 }); // pan left
+    }, 1800);
+    
+    setTimeout(() => {
+      map.current!.panBy([50, 0], { duration: 800 }); // back to center
+    }, 3000);
+
+    // Step 3: Zoom back in (1 second)
+    setTimeout(() => {
+      map.current!.easeTo({
+        center: [originalCenter.lng, originalCenter.lat],
+        zoom: originalZoom,
+        duration: 1000,
+        curve: 1
+      });
+    }, 3800);
+
+    // Step 4: Show analysis boxes after zoom animation (5 seconds total)
+    setTimeout(() => {
+      showAnalysisBoxes();
+    }, 4800);
+
+    // Step 5: Open analysis popup after 6 seconds
+    setTimeout(() => {
+      setIsAnalyzing(false);
+      setShowAnalysisPopup(true);
+      setAnalysisStep('loading');
+      startImageAnalysisSequence();
+    }, 6000);
+  };
+
+  // Show colorful analysis boxes on the map
+  const showAnalysisBoxes = () => {
+    if (!map.current) return;
+
+    // Get current center to place boxes around it
+    const center = map.current.getCenter();
+    const lng = center.lng;
+    const lat = center.lat;
+    
+    // Create larger, more visible analysis boxes around the current center
+    const analysisBoxesData = {
+      type: "FeatureCollection" as const,
+      features: [
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [[
+              [lng - 0.01, lat - 0.01], 
+              [lng + 0.005, lat - 0.01], 
+              [lng + 0.005, lat + 0.005], 
+              [lng - 0.01, lat + 0.005], 
+              [lng - 0.01, lat - 0.01]
+            ]]
+          },
+          properties: { color: "#22c55e", type: "healthy", label: "Healthy Vegetation" }
+        },
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [[
+              [lng + 0.005, lat - 0.005], 
+              [lng + 0.02, lat - 0.005], 
+              [lng + 0.02, lat + 0.01], 
+              [lng + 0.005, lat + 0.01], 
+              [lng + 0.005, lat - 0.005]
+            ]]
+          },
+          properties: { color: "#ef4444", type: "concern", label: "Monitoring Required" }
+        },
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [[
+              [lng - 0.005, lat + 0.005], 
+              [lng + 0.01, lat + 0.005], 
+              [lng + 0.01, lat + 0.02], 
+              [lng - 0.005, lat + 0.02], 
+              [lng - 0.005, lat + 0.005]
+            ]]
+          },
+          properties: { color: "#3b82f6", type: "restored", label: "Restoration Success" }
+        },
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [[
+              [lng - 0.02, lat + 0.01], 
+              [lng - 0.005, lat + 0.01], 
+              [lng - 0.005, lat + 0.025], 
+              [lng - 0.02, lat + 0.025], 
+              [lng - 0.02, lat + 0.01]
+            ]]
+          },
+          properties: { color: "#f97316", type: "growth", label: "Active Growth" }
+        },
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "Polygon" as const,
+            coordinates: [[
+              [lng + 0.01, lat - 0.02], 
+              [lng + 0.025, lat - 0.02], 
+              [lng + 0.025, lat - 0.005], 
+              [lng + 0.01, lat - 0.005], 
+              [lng + 0.01, lat - 0.02]
+            ]]
+          },
+          properties: { color: "#8b5cf6", type: "carbon", label: "High Carbon Density" }
+        }
+      ]
+    };
+
+    // Remove existing analysis boxes if any
+    if (map.current.getSource('analysis-boxes')) {
+      map.current.removeLayer('analysis-boxes-layer');
+      map.current.removeLayer('analysis-boxes-border');
+      map.current.removeSource('analysis-boxes');
+    }
+
+    // Add the analysis boxes source
+    map.current.addSource('analysis-boxes', {
+      type: 'geojson',
+      data: analysisBoxesData
+    });
+
+    // Add fill layer with high opacity
+    map.current.addLayer({
+      id: 'analysis-boxes-layer',
+      type: 'fill',
+      source: 'analysis-boxes',
+      paint: {
+        'fill-color': ['get', 'color'],
+        'fill-opacity': 0.8  // High opacity for better visibility
+      }
+    });
+
+    // Add border layer for even better visibility
+    map.current.addLayer({
+      id: 'analysis-boxes-border',
+      type: 'line',
+      source: 'analysis-boxes',
+      paint: {
+        'line-color': ['get', 'color'],
+        'line-width': 3,
+        'line-opacity': 1
+      }
+    });
+
+    // Add popups for each analysis box
+    analysisBoxesData.features.forEach((feature, index) => {
+      const coords = feature.geometry.coordinates[0];
+      const centerLng = coords.reduce((sum, coord) => sum + coord[0], 0) / coords.length;
+      const centerLat = coords.reduce((sum, coord) => sum + coord[1], 0) / coords.length;
+      
+      setTimeout(() => {
+        const popup = new maplibregl.Popup({ 
+          closeOnClick: false,
+          closeButton: false,
+          anchor: 'center',
+          className: 'analysis-popup'
+        })
+        .setLngLat([centerLng, centerLat])
+        .setHTML(`
+          <div class="bg-white p-2 rounded shadow-lg border-2" style="border-color: ${feature.properties.color}">
+            <div class="text-xs font-semibold" style="color: ${feature.properties.color}">${feature.properties.label}</div>
+          </div>
+        `)
+        .addTo(map.current!);
+
+        // Auto-remove popup after 3 seconds
+        setTimeout(() => {
+          popup.remove();
+        }, 3000);
+      }, index * 500); // Stagger popup appearance
+    });
+  };
+
+  // Start image analysis sequence in popup
+  const startImageAnalysisSequence = () => {
+    // Step 1: Show loading for 2 seconds
+    setTimeout(() => {
+      setAnalysisStep('images');
+      setCurrentImageIndex(0);
+      cycleImages();
+    }, 2000);
+  };
+
+  // Cycle through analysis images
+  const cycleImages = () => {
+    const totalImages = analysisImages.length;
+    let imageIndex = 0;
+
+    const interval = setInterval(() => {
+      if (imageIndex < totalImages - 1) {
+        imageIndex++;
+        setCurrentImageIndex(imageIndex);
+      } else {
+        clearInterval(interval);
+        // Show insights after all images
+        setTimeout(() => {
+          setAnalysisStep('insights');
+          setShowInsights(true);
+        }, 1500);
+      }
+    }, 1500); // 1.5 second gap between images
+  };
+
+  // Close analysis popup
+  const closeAnalysisPopup = () => {
+    setShowAnalysisPopup(false);
+    setAnalysisStep('loading');
+    setCurrentImageIndex(0);
+    setShowInsights(false);
+  };
+
   // Time series animation
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -457,7 +765,7 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
       />
       
       {/* Advanced Controls Panel */}
-      <Card className="absolute top-4 left-4 w-72 bg-white/95 backdrop-blur-sm shadow-lg z-10">
+      <Card className="absolute top-4 left-4 w-72 bg-white/95 backdrop-blur-sm shadow-lg z-10 h-96 overflow-y-auto">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-2">
             <Layers className="h-4 w-4 text-blue-600" />
@@ -465,6 +773,42 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Navigation Controls */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-600">Navigate to Location</label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input
+                placeholder="-74.006 (e.g. NYC)"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                className="text-xs h-8"
+                type="number"
+                step="any"
+              />
+              <Input
+                placeholder="40.7128 (e.g. NYC)"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                className="text-xs h-8"
+                type="number"
+                step="any"
+              />
+            </div>
+            <div className="text-[10px] text-gray-400 space-y-1">
+              <div>Longitude: -180 to 180 (West/East)</div>
+              <div>Latitude: -90 to 90 (South/North)</div>
+            </div>
+            <Button 
+              size="sm" 
+              onClick={navigateToCoordinates}
+              className="w-full text-xs"
+              disabled={!longitude || !latitude}
+            >
+              <MapPin className="h-3 w-3 mr-1" />
+              Go to Location
+            </Button>
+          </div>
+
           {/* View Mode Toggle */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-gray-600">View Mode</label>
@@ -491,30 +835,15 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
           </div>
 
           {/* AI Analysis Controls */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-gray-600">AI Analysis Overlay</label>
-              <Switch
-                checked={showAIAnalysis}
-                onCheckedChange={toggleAIAnalysis}
-              />
-            </div>
-            
-            {showAIAnalysis && (
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600">
-                  AI Layer Opacity: {Math.round(aiOpacity * 100)}%
-                </label>
-                <Slider
-                  value={[aiOpacity]}
-                  onValueChange={(value) => updateAIOpacity(value[0])}
-                  max={1}
-                  min={0.1}
-                  step={0.1}
-                  className="w-full"
-                />
-              </div>
-            )}
+          <div>
+            <Button 
+              onClick={startAIAnalysisWorkflow}
+              className={`w-full text-xs ${isAnalyzing ? 'bg-yellow-500 hover:bg-yellow-600' : showAIAnalysis ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+              disabled={isAnalyzing}
+            >
+              <Activity className={`h-3 w-3 mr-2 ${isAnalyzing ? 'animate-spin' : ''}`} />
+              {isAnalyzing ? 'Analyzing...' : 'AI Analysis'}
+            </Button>
           </div>
 
           {/* Layer Selection */}
@@ -616,33 +945,154 @@ const VerificationMap: React.FC<VerificationMapProps> = ({
         )}
       </div>
 
-      {/* Analysis Summary */}
-      <Card className="absolute bottom-4 left-4 w-72 bg-white/95 backdrop-blur-sm z-10">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Analysis Summary</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="text-center p-2 bg-green-50 rounded">
-              <div className="font-bold text-green-600">
-                {mockAnalysisAreas.filter(a => a.type === 'healthy' || a.type === 'restored').length}
+      {/* AI Analysis Popup Modal */}
+      {showAnalysisPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-xl shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-50 to-green-50">
+              <div className="flex items-center space-x-3">
+                <Activity className="h-6 w-6 text-blue-600" />
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800">AI Analysis Results</h3>
+                  <p className="text-sm text-gray-600">Blue Carbon Area Verification</p>
+                </div>
               </div>
-              <div className="text-gray-600">Healthy Areas</div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full hover:bg-gray-100"
+                onClick={closeAnalysisPopup}
+              >
+                <Eye className="h-5 w-5" />
+              </Button>
             </div>
-            <div className="text-center p-2 bg-red-50 rounded">
-              <div className="font-bold text-red-600">
-                {mockAnalysisAreas.filter(a => a.type === 'concern' || a.type === 'degraded').length}
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-auto max-h-[calc(90vh-120px)]">
+              {analysisStep === 'loading' && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Satellite className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <h4 className="mt-6 text-lg font-semibold text-gray-800">Fetching Images and Analyzing</h4>
+                  <p className="mt-2 text-gray-600 text-center">Processing satellite imagery and AI analysis data...</p>
+                </div>
+              )}
+
+              {analysisStep === 'images' && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-2">Satellite Image Analysis</h4>
+                    <p className="text-gray-600">Analyzing plantation evidence from multiple sources</p>
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="relative max-w-2xl">
+                      <img 
+                        src={analysisImages[currentImageIndex]} 
+                        alt={`Analysis Image ${currentImageIndex + 1}`}
+                        className="w-full h-auto rounded-lg shadow-lg border border-gray-200"
+                        style={{ maxHeight: '400px', objectFit: 'contain' }}
+                      />
+                      <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium">
+                        Image {currentImageIndex + 1} of {analysisImages.length}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center space-x-2">
+                    {analysisImages.map((_, index) => (
+                      <div 
+                        key={index}
+                        className={`w-3 h-3 rounded-full transition-colors ${
+                          index <= currentImageIndex ? 'bg-blue-600' : 'bg-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {analysisStep === 'insights' && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <h4 className="text-lg font-semibold text-green-800 mb-2">Analysis Complete ✓</h4>
+                    <p className="text-gray-600">Plantation verification successful</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Final Analysis Image */}
+                    <div className="space-y-4">
+                      <h5 className="font-semibold text-gray-800">Final Satellite View</h5>
+                      <img 
+                        src={analysisImages[analysisImages.length - 1]} 
+                        alt="Final Analysis"
+                        className="w-full h-auto rounded-lg shadow-lg border border-gray-200"
+                        style={{ maxHeight: '300px', objectFit: 'contain' }}
+                      />
+                    </div>
+
+                    {/* Generated Insights */}
+                    <div className="space-y-4">
+                      <h5 className="font-semibold text-gray-800 flex items-center">
+                        <Eye className="h-4 w-4 mr-2 text-green-600" />
+                        Key Insights
+                      </h5>
+                      <div className="space-y-3">
+                        {analysisInsights.map((insight, index) => (
+                          <div key={index} className="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                            <div className="w-2 h-2 rounded-full bg-green-500 mt-2 flex-shrink-0" />
+                            <p className="text-sm text-gray-700 leading-relaxed">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-3 gap-4 mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">95%</div>
+                      <div className="text-xs text-gray-600">Verification Confidence</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">12.5</div>
+                      <div className="text-xs text-gray-600">tCO₂e/ha/year</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-purple-600">85%</                      <div className="text-xs text-gray-600">Coverage Increase</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {analysisStep === 'insights' && (
+              <div className="flex items-center justify-between p-6 border-t bg-gray-50">
+                <div className="text-sm text-gray-600">
+                  Analysis completed on {new Date().toLocaleDateString()}
+                </div>
+                <div className="flex space-x-3">
+                  <Button variant="outline" onClick={closeAnalysisPopup}>
+                    Close Analysis
+                  </Button>
+                  <Button className="bg-green-600 hover:bg-green-700 text-white">
+                    Export Report
+                  </Button>
+                </div>
               </div>
-              <div className="text-gray-600">Concern Areas</div>
-            </div>
+            )}
           </div>
-          <div className="text-xs text-gray-600">
-            <strong>Project:</strong> {projectId} • <strong>Confidence:</strong> 91%
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 };
 
 export default VerificationMap;
+import VerificationMap from './VerificationMap.tsx';
