@@ -175,7 +175,7 @@ const MintingConsole = () => {
 
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-4">"Ready to Mint" Queue</h3>
-            <div className="space-y-4">
+            <div className="">
               {readyProjects.map((project) => (
                 <Card 
                   key={project.id} 
@@ -199,7 +199,7 @@ const MintingConsole = () => {
                           <h4 className="font-semibold text-foreground">
                             Project #{project.id} - {project.projectName}
                           </h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-2 text-sm">
+                          <div className="mt-2 text-sm">
                             <div>
                               <p className="text-muted-foreground">Final Verified Tonnage</p>
                               <p className="font-bold text-success">
