@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,11 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import {
   ArrowLeft, FileText, Map, Coins, Download, Eye,
-  CheckCircle, XCircle, Upload, Satellite, ImageIcon, X, Activity
+  CheckCircle, XCircle, Upload, Satellite, ImageIcon, X, Activity,
+  Loader2, Hash, ExternalLink, Copy, Wallet
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
 import VerificationMap from './VerificationMap';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { MultiStepLoader } from '@/components/ui/multi-step-loader';
 
 // Import document images
 import doc1Image from '@/assets/doc1.png';
@@ -49,7 +54,7 @@ const MOCK_PROJECT_DATA: ProjectData = {
   id: 'BCR-001',
   name: 'Mombasa Mangrove Restoration',
   ngoName: 'Ocean Conservation Trust',
-  location: 'Mombasa, Kenya',
+  location: 'Sundarban, India',
   hectares: 150,
   carbonClaim: 2500,
   dateSubmitted: '2025-09-15',
@@ -67,6 +72,8 @@ const ProjectVerificationWorkspace: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { publicKey, connected } = useWallet();
+  const { connection } = useConnection();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('documents');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -336,93 +343,330 @@ const ProjectVerificationWorkspace: React.FC = () => {
     </div>
   );
 
-  const MintingTab = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-semibold text-foreground">Carbon Credit Minting</h3>
-        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-          Ready for Minting
-        </Badge>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Project Summary for Minting */}
-        <Card>
+  const MintingTab = () => {
+    const [showMintingModal, setShowMintingModal] = useState(false);
+    const [verificationStep, setVerificationStep] = useState<'checking' | 'verified' | 'minting' | 'complete'>('checking');
+    const [hashResults, setHashResults] = useState<any[]>([]);
+    const [mintingDetails, setMintingDetails] = useState<any>(null);
+    const [showTxModal, setShowTxModal] = useState(false);
+    const [lastTx, setLastTx] = useState<any>(null);
+
+    // Fallback effect: if mint finished but modal not shown, open it automatically
+    useEffect(() => {
+      if (verificationStep === 'complete' && mintingDetails && !showTxModal) {
+        console.log('[MintingTab] Auto-opening transaction modal');
+        setShowTxModal(true);
+      }
+    }, [verificationStep, mintingDetails, showTxModal]);
+
+    const loadingStates = [
+      { text: 'Initializing blockchain connection...' },
+      { text: 'Verifying document hashes...' },
+      { text: 'Authenticating project ownership...' },
+      { text: 'Calculating carbon credit allocation...' },
+      { text: 'Preparing smart contract deployment...' },
+      { text: 'Executing carbon token minting...' },
+      { text: 'Confirming blockchain transaction...' },
+      { text: 'Finalizing carbon token creation...' }
+    ];
+
+    const startTokenization = () => {
+      console.log('[MintingTab] startTokenization invoked');
+      setShowMintingModal(true);
+      setVerificationStep('checking');
+      setHashResults([]);
+      setMintingDetails(null);
+
+      const documents = [
+        { name: 'land_ownership_deed.pdf', hash: '0xa1b2c3d4e5f6', status: 'checking' },
+        { name: 'Community / NGO Agreements.docx', hash: '0xf6e5d4c3b2a1', status: 'checking' },
+        { name: 'field_photos_2025.zip', hash: '0x123abc456def', status: 'checking' },
+        { name: 'Plantation / Restoration Proof.pdf', hash: '0xdef456abc123', status: 'checking' },
+        { name: 'Satellite Imagery Data', hash: '0x789ghi012jkl', status: 'checking' }
+      ];
+      setHashResults(documents);
+
+      documents.forEach((doc, index) => {
+        setTimeout(() => {
+          console.log(`[MintingTab] Hash verified for: ${doc.name}`);
+          setHashResults(prev => prev.map(r => r.name === doc.name ? { ...r, status: 'matched' } : r));
+          if (index === documents.length - 1) {
+            setTimeout(() => setVerificationStep('verified'), 400);
+          }
+        }, (index + 1) * 650);
+      });
+    };
+
+    const handleMintTokens = () => {
+      console.log('[MintingTab] handleMintTokens invoked');
+      if (!connected || !publicKey) {
+        toast({ title: 'Wallet Not Connected', description: 'Proceeding with simulated mint (test mode).' });
+      }
+      setVerificationStep('minting');
+
+      // Calculate proper duration based on MultiStepLoader
+      // 8 loading states * 1000ms per step = 8000ms total
+      const totalDuration = 8000; // 8 seconds to match the loading states
+      console.log('[MintingTab] totalDuration(ms)=', totalDuration);
+
+      const simulate = () => {
+        console.log('[MintingTab] Simulated mint complete, preparing details');
+        
+        // Generate more realistic Solana transaction signature format
+        const generateRealisticTxHash = () => {
+          const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789';
+          let result = '';
+          for (let i = 0; i < 88; i++) { // Solana signatures are typically 87-88 chars
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          return result;
+        };
+        
+        const txHash = generateRealisticTxHash();
+        const walletAddr = connected && publicKey ? publicKey.toBase58() : `So1anaWal1etAddre55${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}123`;
+        
+        const details = {
+          transactionHash: txHash,
+          blockNumber: Math.floor(Math.random() * 900000) + 18500000,
+          timestamp: new Date().toISOString(),
+          formattedTimestamp: new Date().toLocaleString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit',
+            timeZone: 'UTC',
+            timeZoneName: 'short'
+          }),
+          status: 'Success',
+          carbonTokens: projectData.carbonClaim,
+          walletAddress: walletAddr,
+          tokenAddress: `${generateRealisticTxHash().slice(0, 44)}`, // Token address format
+          networkFee: '0.00012 SOL',
+          gasUsed: '0.00234 SOL',
+          totalCost: '0.00246 SOL'
+        };
+        
+        setMintingDetails(details);
+        setLastTx(details);
+        
+        // First set verification to complete (this will stop the loading)
+        setVerificationStep('complete');
+        
+        // Wait a brief moment for loading to finish, then show transaction modal
+        setTimeout(() => {
+          setShowMintingModal(false);
+          setShowTxModal(true);
+        }, 500);
+      };
+
+      setTimeout(() => {
+        simulate();
+      }, totalDuration);
+    };
+
+    const copyToClipboard = (val: string) => {
+      navigator.clipboard.writeText(val);
+      toast({ title: 'Copied', description: 'Value copied to clipboard.' });
+    };
+
+    const closeTxModal = () => {
+      setShowTxModal(false);
+      setVerificationStep('checking');
+      setMintingDetails(null);
+      setHashResults([]);
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-semibold text-foreground">Carbon Tokenization</h3>
+          <div className="flex items-center gap-2">
+            <WalletMultiButton />
+            {connected && (
+              <Badge className="bg-green-500/20 text-green-400 border-green-500/30 flex items-center">
+                <Wallet className="h-3 w-3 mr-1" /> Connected
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Card className="border border-border/50 bg-card/50">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Coins className="h-5 w-5 mr-2 text-primary" />
-              Project Summary
+              Initiate Carbon Tokenization
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Project Name:</span>
-                <span className="font-medium">{projectData.name}</span>
+            <p className="text-sm text-muted-foreground">This process verifies all project evidence and mints the carbon tokens on-chain.</p>
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+              <div>
+                <h4 className="font-semibold text-sm">Ready for Tokenization</h4>
+                <p className="text-xs text-muted-foreground">All prerequisite verification steps passed</p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Area:</span>
-                <span className="font-medium">{projectData.hectares} Hectares</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Carbon Claim:</span>
-                <span className="font-bold text-green-500">{projectData.carbonClaim.toLocaleString()} tCO₂e</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Verification Status:</span>
-                <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Verified
-                </Badge>
-              </div>
+              <Button onClick={startTokenization} disabled={!connected || verificationStep==='minting'} className="bg-primary hover:bg-primary/90">
+                <Coins className="h-4 w-4 mr-2" /> Start
+              </Button>
             </div>
+            {!connected && (
+              <div className="text-xs text-orange-600 bg-orange-50 dark:bg-orange-900/30 p-3 rounded border">Connect wallet to proceed.</div>
+            )}
           </CardContent>
         </Card>
-        
-        {/* Minting Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Minting Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Approve & Mint Credits
-              </Button>
-              
-              <Button variant="destructive" className="w-full">
-                <XCircle className="h-4 w-4 mr-2" />
-                Reject Project
-              </Button>
-              
-              <Button variant="outline" className="w-full">
-                Request Additional Information
-              </Button>
-            </div>
-            
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-              <h4 className="font-semibold mb-2">Minting Details</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Network:</span>
-                  <span>Solana</span>
+
+        {/* Hash Verification Modal */}
+        <AnimatePresence>
+          {showMintingModal && verificationStep !== 'minting' && verificationStep !== 'complete' && (
+            <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowMintingModal(false)}>
+              <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }} className="w-full max-w-lg bg-background rounded-xl border border-border/50 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between p-4 border-b">
+                  <div className="flex items-center gap-2">
+                    <Coins className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold text-sm">Hash Verification</h4>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setShowMintingModal(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex justify-between">
-                  <span>Token Standard:</span>
-                  <span>SPL-Token</span>
+                <div className="p-4 space-y-4 max-h-[60vh] overflow-auto">
+                  <p className="text-xs text-muted-foreground">
+                    {verificationStep === 'checking' ? 'Verifying submitted document & imagery hashes...' : 'All hashes verified successfully.'}
+                  </p>
+                  <div className="space-y-2">
+                    {hashResults.map((item, i) => (
+                      <motion.div key={item.name} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }} className="flex items-center justify-between text-xs px-3 py-2 rounded bg-muted/40 border">
+                        <span className="truncate max-w-[150px]" title={item.name}>{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[10px] text-muted-foreground hidden sm:inline">{item.hash}</span>
+                          {item.status === 'checking' && <Loader2 className="h-3 w-3 text-yellow-500 animate-spin" />}
+                          {item.status === 'matched' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {verificationStep === 'verified' && (
+                    <div className="pt-2 text-center space-y-3">
+                      <div className="text-green-600 text-sm font-medium flex items-center justify-center">
+                        <CheckCircle className="h-4 w-4 mr-1" /> All hashes matched
+                      </div>
+                      <Button onClick={handleMintTokens} className="w-full bg-green-600 hover:bg-green-700 text-white">
+                        <Coins className="h-4 w-4 mr-2" /> Mint Carbon Tokens
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span>Estimated Fee:</span>
-                  <span>~0.00005 SOL</span>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* MultiStep Loader for Minting */}
+        <MultiStepLoader loadingStates={loadingStates} loading={verificationStep === 'minting'} duration={1000} />
+
+        {/* Transaction Result Modal */}
+        <AnimatePresence>
+          {showTxModal && mintingDetails && (
+            <motion.div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }} className="w-full max-w-xl bg-background rounded-xl border border-border/60 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <div className="p-5 border-b flex items-center justify-between bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                    <h4 className="font-semibold text-sm">Carbon Tokens Minted</h4>
+                  </div>
+                  <Button size="icon" variant="ghost" onClick={closeTxModal}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
+                <div className="p-6 space-y-6">
+                  <div className="text-center space-y-1">
+                    <div className="text-4xl font-bold text-green-600">{mintingDetails.carbonTokens.toLocaleString()}</div>
+                    <div className="text-xs uppercase tracking-wide text-muted-foreground">Blue Carbon Tokens (BCT)</div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Transaction Hash</p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10px] break-all flex-1">{mintingDetails.transactionHash}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(mintingDetails.transactionHash)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Block</p>
+                      <p className="font-medium">#{mintingDetails.blockNumber.toLocaleString()}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Timestamp</p>
+                      <p className="font-medium">{mintingDetails.formattedTimestamp}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Status</p>
+                      <Badge className="bg-green-600 text-white h-5 px-2">{mintingDetails.status}</Badge>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Wallet Address</p>
+                      <p className="font-mono text-[10px] break-all">{mintingDetails.walletAddress}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Network Fee</p>
+                      <p className="font-medium">{mintingDetails.networkFee}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border">
+                      <p className="text-muted-foreground mb-1">Total Cost</p>
+                      <p className="font-medium">{mintingDetails.totalCost}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/40 border sm:col-span-2">
+                      <p className="text-muted-foreground mb-1">Token Address</p>
+                      <p className="font-mono text-[10px] break-all">{mintingDetails.tokenAddress}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      className="flex-1" 
+                      onClick={() => {
+                        // Open Solscan with a notice about simulated transactions
+                        const url = `https://solscan.io/tx/${mintingDetails.transactionHash}`;
+                        window.open(url, '_blank');
+                        
+                        // Show helpful toast about simulation
+                        toast({
+                          title: "Explorer Opened",
+                          description: "Note: This is a simulated transaction for demo purposes. In production, this would link to the actual blockchain transaction.",
+                          duration: 5000
+                        });
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" /> View on Solscan
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => copyToClipboard(mintingDetails.transactionHash)}>Copy Hash</Button>
+                    <Button variant="secondary" className="flex-1" onClick={closeTxModal}>Close</Button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Inline Last Transaction Summary */}
+        {lastTx && !showTxModal && (
+          <Card className="border border-green-500/30 bg-green-50/40 dark:bg-green-900/10">
+            <CardContent className="py-4 px-5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="text-sm">
+                <span className="font-semibold text-green-700 dark:text-green-300">Last Mint:</span> {lastTx.carbonTokens} BCT • Tx {lastTx.transactionHash.slice(0, 14)}... • Block #{lastTx.blockNumber}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setShowTxModal(true)}>Details</Button>
+                <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(lastTx.transactionHash)}>Copy Hash</Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // =========== RENDER =========== //
 
