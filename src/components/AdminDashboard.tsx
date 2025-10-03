@@ -6,7 +6,7 @@ import UserManagement from './admin/UserManagement';
 import ProjectOversight from './admin/ProjectOversight';
 import MintingConsole from './admin/MintingConsole';
 import { BarChart3, Users, Eye, Coins } from 'lucide-react';
-
+// Configuration
 const TAB_CONFIG = [
   { value: 'overview', icon: BarChart3, label: 'Overview', component: <SystemOverview /> },
   { value: 'users', icon: Users, label: 'Users', component: <UserManagement /> },
