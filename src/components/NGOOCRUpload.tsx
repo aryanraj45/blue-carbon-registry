@@ -7,7 +7,7 @@ import { Button } from './ui/button';
 interface NGOOCRUploadProps {
   onOCRComplete: (result: OCRResult) => void;
 }
-
+//component for uploading and processing NGO documents via OCR
 const NGOOCRUpload: React.FC<NGOOCRUploadProps> = ({ onOCRComplete }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
