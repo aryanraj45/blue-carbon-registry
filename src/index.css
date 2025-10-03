@@ -237,9 +237,9 @@ All colors MUST be HSL.
     max-width: 16px !important;
   }
 
-  /* Force container constraints */
+  /* Force container constraints dvrrggrw */
   html body .wallet-adapter-modal,
-  html body .wallet-adapter-dropdown {
+  html body .wallet-adapter-dropdown { 
     max-width: 200px !important;
   }
 
