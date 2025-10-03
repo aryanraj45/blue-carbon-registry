@@ -64,6 +64,13 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        chart: {
+            '1': 'hsl(var(--chart-1))',
+            '2': 'hsl(var(--chart-2))',
+            '3': 'hsl(var(--chart-3))',
+            '4': 'hsl(var(--chart-4))',
+            '5': 'hsl(var(--chart-5))'
+        }
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -87,7 +94,6 @@ export default {
             height: "0",
           },
         },
-        // START: ADDED THIS KEYFRAME
         aurora: {
           from: {
             backgroundPosition: "50% 50%, 50% 50%",
@@ -104,15 +110,12 @@ export default {
             transform: "translateX(100%)",
           },
         },
-        // END: ADDED THIS KEYFRAME
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        // START: ADDED THIS ANIMATION
         aurora: "aurora 60s linear infinite",
         shimmer: "shimmer 2s linear infinite",
-        // END: ADDED THIS ANIMATION
       },
     },
   },
