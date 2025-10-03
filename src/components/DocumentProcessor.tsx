@@ -7,6 +7,7 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Upload, FileText, CheckCircle, Database, Hash, Copy, Eye, Clock, X, Loader2, Download, ExternalLink, Scan, Zap, Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FileUpload } from "@/components/ui/file-upload"; // 1. THIS LINE IS ADDED
 
 interface DocumentProcessorProps {
   onProcessingComplete?: (result: OCRResult) => void;
@@ -28,8 +29,9 @@ const DocumentProcessor: React.FC<DocumentProcessorProps> = ({
   const [progressValue, setProgressValue] = useState(0);
   const { toast } = useToast();
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  // 3. THIS FUNCTION IS MODIFIED
+  const handleFileUpload = (files: File[]) => {
+    const file = files?.[0];
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
@@ -584,29 +586,9 @@ const DocumentProcessor: React.FC<DocumentProcessorProps> = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Upload Section */}
-          <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
-            <input
-              type="file"
-              id="pdf-upload"
-              accept=".pdf,application/pdf"
-              onChange={handleFileUpload}
-              className="hidden"
-            />
-            <label htmlFor="pdf-upload" className="cursor-pointer">
-              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-white mb-2">Upload PDF Document</h3>
-              <p className="text-gray-400 mb-4">
-                Upload containing all required documents for hash generation
-              </p>
-              <Button variant="outline" className="mb-2">
-                Choose PDF File
-              </Button>
-              <p className="text-xs text-gray-500">
-                Supports: PDF files only (Max 10MB)
-              </p>
-            </label>
-          </div>
+          
+          {/* 2. THIS BLOCK IS REPLACED */}
+          <FileUpload onChange={handleFileUpload} />
 
           {/* Uploaded File Display */}
           {uploadedFile && (
