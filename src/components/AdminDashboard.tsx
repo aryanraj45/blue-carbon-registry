@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import DashboardHeader from './DashboardHeader';
 import SystemOverview from './admin/SystemOverview';
 import UserManagement from './admin/UserManagement';
-import ProjectOversight from './admin/ProjectOversight';
+import ProjectOversight from './admin/ProjectOversight';  
 import MintingConsole from './admin/MintingConsole';
 import { BarChart3, Users, Eye, Coins } from 'lucide-react';
 // Configuration
