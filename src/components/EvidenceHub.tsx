@@ -5,7 +5,7 @@ import { Brain, FileText, Map, MessageCircle } from 'lucide-react';
 import AIAnalysisTab from './AIAnalysisTab';
 import DocumentViewer from './DocumentViewer';
 import MapComparator from './MapComparator';
-import CommunicationLog from './CommunicationLog';
+import CommunicationLog from './CommunicationLog';//
 
 interface EvidenceHubProps {
   projectData: {
