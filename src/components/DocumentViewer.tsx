@@ -6,7 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FileText, Eye, Download, AlertCircle } from 'lucide-react';
 
 interface Document {
-  id: string;
+  id: string;  
   name: string;
   type: 'pdf' | 'docx' | 'jpg' | 'png';
   size: string;
