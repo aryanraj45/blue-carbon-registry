@@ -1,6 +1,6 @@
 import React, { useEffect, useReducer } from 'react';
 
-// Define the structure of props for the component
+// Define the structure of props for the component and 
 interface SatelliteVerifierProps {
   lat: number;
   lon: number;
