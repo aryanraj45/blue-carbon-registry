@@ -9,7 +9,7 @@ import CommunicationLog from './CommunicationLog';//
 
 interface EvidenceHubProps {
   projectData: {
-    id: string;
+    id: string;  
     confidenceScore: number;
     aiSummary: string;
     checklistItems: Array<{
