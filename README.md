@@ -28,7 +28,7 @@ This README provides an overview of our project for the SIH Hackathon, including
 | Nehal Pathak    | 2024UCD2175     | [@nehal1930](https://github.com/nehal1930)             |
 
 ---
-
+  
 ## 🔗 Project Links
 | Resource            | Link                                                                                        |
 |---------------------|---------------------------------------------------------------------------------------------|
