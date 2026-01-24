@@ -5,7 +5,7 @@
 | Field                 | Details                                                    |
 |-----------------------|------------------------------------------------------------|
 | **Problem Statement ID** | 25038                                                      |
-| **Title** | Blockchain Based Blue Carbon Registry and MRV System       |
+| **Title** | Blockchain Based Blue Carbon Registry and MRV System       | 
 | **Theme** | Clean & Green Technology                                   |
 | **Category** | Software                                                   |
 
