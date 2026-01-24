@@ -12,7 +12,7 @@
 This README provides an overview of our project for the SIH Hackathon, including team details, relevant links, tasks completed, the technology stack, key features, and steps to run the project locally.
 
 ---
-
+  
 ## Team PLUTO
 
 **Team Leader:** **Raj Aryan** - [@aryanraj45](https://github.com/aryanraj45)
