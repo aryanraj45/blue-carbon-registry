@@ -1,6 +1,6 @@
 # Blue Carbon Registry Platform 
 > The Trust Layer for Blue Carbon: A Verifiable, AI-Powered MRV System on the Blockchain.
-
+      
 ## Smart India Hackathon - Problem Statement
 | Field                 | Details                                                    |
 |-----------------------|------------------------------------------------------------|
