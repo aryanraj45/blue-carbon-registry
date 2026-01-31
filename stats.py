@@ -11,7 +11,7 @@ SAMPLE_DATA = """
   {"id": 5, "name": "Eve", "role": "designer", "age": 31, "city": "London"},
   {"id": 6, "name": "Frank", "role": "engineer", "age": 29, "city": "Tokyo"}
 ]
-"""
+"""     
 
 class DataAnalyzer:
     """A utility class to perform basic analysis on a user dataset."""
