@@ -1,7 +1,7 @@
 import json
 from collections import Counter
 
-# A sample dataset represented as a JSON string.  jfjfhfhf
+# A sample dataset represented as a JSON string.  jfjfhfhf   
 SAMPLE_DATA = """
 [    
   {"id": 1, "name": "Alice", "role": "engineer", "age": 32, "city": "New York"},
