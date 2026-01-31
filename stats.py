@@ -3,7 +3,7 @@ from collections import Counter
 
 # A sample dataset represented as a JSON string.  jfjfhfhf
 SAMPLE_DATA = """
-[
+[    
   {"id": 1, "name": "Alice", "role": "engineer", "age": 32, "city": "New York"},
   {"id": 2, "name": "Bob", "role": "designer", "age": 28, "city": "London"},
   {"id": 3, "name": "Charlie", "role": "engineer", "age": 45, "city": "New York"},
