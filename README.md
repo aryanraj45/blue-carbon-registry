@@ -9,6 +9,8 @@
 | **Theme** | Clean & Green Technology                                   |
 | **Category** | Software                                                   |  
 
+
+     
 This README provides an overview of our project for the SIH Hackathon, including team details, relevant links, tasks completed, the technology stack, key features, and steps to run the project locally.
 
 ---
