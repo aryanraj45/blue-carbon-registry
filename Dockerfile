@@ -24,7 +24,7 @@ FROM node:18-alpine AS production
 
 WORKDIR /app
 
-# Copy only the compiled code and production dependencies
+# Copy only the compiled code and production dependencies   
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
